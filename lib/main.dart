@@ -14,7 +14,7 @@ class VCallMeApp extends StatelessWidget {
     return MaterialApp(
       title: 'v-call-me',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blueAccent),
         useMaterial3: true,
       ),
       home: const HomeScreen(),
