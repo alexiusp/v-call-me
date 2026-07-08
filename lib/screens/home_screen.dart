@@ -17,7 +17,7 @@ class HomeScreen extends StatelessWidget {
             FilledButton(
               onPressed: () => Navigator.of(context).push(
                 MaterialPageRoute(
-                  builder: (_) => const QrDisplayScreen(role: CallRole.host),
+                  builder: (_) => QrDisplayScreen(role: CallRole.host),
                 ),
               ),
               child: const Padding(

@@ -105,19 +105,20 @@ Flutter project scaffolded, Android-only, package `v_call_me`, org `com.example`
 **Code** (all under `lib/`, flat structure so far - screens + one service):
 - `main.dart` - app entry point (`VCallMeApp`), routes to `HomeScreen`.
 - `screens/home_screen.dart` - "Start a call" / "Join a call" buttons; navigates to `QrDisplayScreen` / `QrImportScreen`. Also defines the shared `CallRole` enum (host/joiner).
-- `screens/qr_display_screen.dart` - placeholder screen; takes a `CallRole` and optional payload string, but doesn't render a QR code yet (`qr_flutter` not wired in).
+- `screens/qr_display_screen.dart` - renders the current payload as a QR code (`qr_flutter`, error-correction level H per section 4) and offers a "Share as file" button (`share_plus`, PNG bytes via `services/qr_export.dart`) to avoid the lossy photo-recompression issue noted in section 4. For the host role, if no payload is passed in it drives `CallSession.createOffer()` itself and shows a loading state while awaiting it (currently ends in the error state since `createOffer()` is still unimplemented - see below). The joiner role still requires an explicit payload to be passed in.
+- `services/qr_export.dart` - renders QR payload data to PNG bytes (`QrPainter.toImageData`) for the display screen's share button.
 - `screens/qr_import_screen.dart` - placeholder screen; no camera scan or gallery import wired in yet (`mobile_scanner` / `image_picker` not wired in).
 - `screens/in_call_screen.dart` - placeholder screen; not yet reachable from navigation.
 - `services/call_session.dart` - `CallSession` class and `CallState` enum matching the state machine in section 5; `createOffer()`, `acceptOfferAndCreateAnswer()`, `applyRemoteAnswer()` all currently throw `UnimplementedError()`. No `flutter_webrtc` `RTCPeerConnection` wiring yet.
 
-**Not implemented yet**: SDP compact-payload encode/decode (section 4), actual `RTCPeerConnection`/ICE gathering logic, QR generation/scanning, TURN/STUN credential configuration, navigation from the QR screens through to `InCallScreen`, release signing config.
+**Not implemented yet**: SDP compact-payload encode/decode (section 4), actual `RTCPeerConnection`/ICE gathering logic, QR *scanning/import* (`mobile_scanner`/`image_picker`), TURN/STUN credential configuration, navigation from the QR screens through to `InCallScreen`, release signing config.
 
-**Verified working**: `flutter analyze` and `flutter test` pass on the current stub code; `flutter build apk --debug` succeeds end-to-end on Android (produces a working `app-debug.apk`).
+**Verified working**: `flutter analyze` and `flutter test` pass (including widget tests for `QrDisplayScreen` using a fake `CallSession`); `flutter build apk --debug` succeeds end-to-end on Android (produces a working `app-debug.apk`).
 
 ## 10. Open questions / next steps
 
-- SDP reconstruction template - building a valid offer/answer string from the compact schema fields, and wiring `CallSession` to `flutter_webrtc`'s `RTCPeerConnection`.
-- QR generation/scanning implementation using the already-added `qr_flutter` / `mobile_scanner` packages.
+- SDP reconstruction template - building a valid offer/answer string from the compact schema fields, and wiring `CallSession` to `flutter_webrtc`'s `RTCPeerConnection`. This is what currently blocks the host QR screen from showing a real offer (`createOffer()` is still a stub).
+- QR *scanning/import* implementation using the already-added `mobile_scanner`/`image_picker` packages (display/share side is done, see above).
 - TURN/STUN server credentials and configuration (free tier vs. self-hosted `coturn`).
 - Real application ID / namespace (currently placeholder `com.example.v_call_me`).
 - Release signing configuration (release builds are currently debug-signed).
