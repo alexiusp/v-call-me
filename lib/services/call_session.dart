@@ -2,11 +2,14 @@ import 'dart:async';
 import 'dart:math';
 import 'dart:typed_data';
 
+import 'package:flutter_webrtc/flutter_webrtc.dart' show MediaStream;
+
 import '../data/turn/turn_credentials_service.dart';
 import '../data/webrtc/webrtc_peer_connection_gateway.dart';
 import '../domain/signaling/peer_connection_gateway.dart';
 import '../domain/signaling/sdp_codec.dart';
 import '../domain/signaling/signaling_codec.dart';
+import '../domain/signaling/signaling_payload.dart';
 
 enum CallState {
   idle,
@@ -49,6 +52,27 @@ class CallSession {
   /// (DESIGN.md section 4).
   Uint8List? _pendingOfferSessionId;
 
+  /// This side's own signaling payload (decoded, not raw bytes) - the offer
+  /// if this is the host, the answer if this is the joiner. Exposed for
+  /// diagnostics/debugging (see the host's debug panel on the call screen).
+  SignalingPayload? localPayload;
+
+  /// The last signaling payload received from the other side (decoded, not
+  /// raw bytes) - e.g. on the host, this is the joiner's answer. Exposed for
+  /// diagnostics/debugging (see the host's debug panel on the call screen).
+  SignalingPayload? remotePayload;
+
+  /// The last status the gateway reported, so a UI that starts observing
+  /// [connectionStatus] late (e.g. after an `await` lets an earlier one-shot
+  /// event go by) can still learn the current state instead of being stuck
+  /// waiting for the next transition, which may never come.
+  PeerConnectionStatus currentConnectionStatus = PeerConnectionStatus.connecting;
+
+  MediaStream? get localStream => _gateway.localStream;
+  Stream<MediaStream> get remoteStream => _gateway.remoteStream;
+  MediaStream? get currentRemoteStream => _gateway.currentRemoteStream;
+  Stream<PeerConnectionStatus> get connectionStatus => _gateway.connectionState;
+
   Future<Uint8List> createOffer() async {
     state = CallState.creatingOffer;
     await _ensureGatewayOpen();
@@ -59,6 +83,7 @@ class CallSession {
     final sessionId = _generateSessionId();
     _pendingOfferSessionId = sessionId;
     final payload = extractFromSdp(offerSdp, isAnswer: false, sessionId: sessionId);
+    localPayload = payload;
 
     state = CallState.awaitingRemoteAnswer;
     return encodeSignalingPayload(payload);
@@ -69,6 +94,7 @@ class CallSession {
     if (decodedOffer.isAnswer) {
       throw const FormatException('Expected an offer payload, got an answer');
     }
+    remotePayload = decodedOffer;
 
     state = CallState.creatingAnswer;
     await _ensureGatewayOpen();
@@ -82,6 +108,7 @@ class CallSession {
       isAnswer: true,
       sessionId: decodedOffer.sessionId,
     );
+    localPayload = answerPayload;
 
     // Both descriptions are already set at this point (offer via
     // setRemoteDescription inside createLocalAnswer, answer via
@@ -104,6 +131,7 @@ class CallSession {
       throw StateError(
           "Answer's session id doesn't match the offer's - it may be a reply to a different call");
     }
+    remotePayload = decodedAnswer;
 
     await _gateway.applyRemoteAnswer(buildSdp(decodedAnswer));
     state = CallState.connecting;
@@ -118,6 +146,7 @@ class CallSession {
   }
 
   void _handleConnectionStatus(PeerConnectionStatus status) {
+    currentConnectionStatus = status;
     switch (status) {
       case PeerConnectionStatus.connected:
         state = CallState.connected;

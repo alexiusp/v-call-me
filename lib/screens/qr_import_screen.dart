@@ -4,13 +4,26 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
-import '../domain/signaling/signaling_codec.dart';
-import '../domain/signaling/signaling_payload.dart';
+import '../services/call_session.dart';
+import 'home_screen.dart';
+import 'in_call_screen.dart';
+import 'qr_display_screen.dart';
 
 /// Camera scanner and/or gallery image picker for an offer/answer QR code,
 /// reused for both roles per DESIGN.md section 6.
+///
+/// If [hostSession] is supplied, this screen is the host's second step:
+/// it's scanning the joiner's answer QR to complete an already-started call,
+/// so a decoded payload is fed into [CallSession.applyRemoteAnswer] and the
+/// call moves on to [InCallScreen]. Otherwise this is the joiner's first
+/// step: a decoded offer starts a brand new [CallSession] via
+/// [CallSession.acceptOfferAndCreateAnswer], and the resulting answer is
+/// shown on [QrDisplayScreen] for the host to scan back.
 class QrImportScreen extends StatefulWidget {
-  const QrImportScreen({super.key});
+  const QrImportScreen({super.key, this.hostSession, this.showDebugPanel = false});
+
+  final CallSession? hostSession;
+  final bool showDebugPanel;
 
   @override
   State<QrImportScreen> createState() => _QrImportScreenState();
@@ -18,7 +31,7 @@ class QrImportScreen extends StatefulWidget {
 
 class _QrImportScreenState extends State<QrImportScreen> {
   final MobileScannerController _controller = MobileScannerController();
-  bool _handling = false;
+  bool _busy = false;
   String? _error;
 
   @override
@@ -27,34 +40,54 @@ class _QrImportScreenState extends State<QrImportScreen> {
     super.dispose();
   }
 
-  void _handlePayload(Uint8List bytes) {
-    if (_handling) return;
-    _handling = true;
-    try {
-      final payload = decodeSignalingPayload(bytes);
-      _onDecoded(payload);
-    } on FormatException catch (e) {
-      setState(() => _error = 'Could not read QR code: ${e.message}');
-      _handling = false;
-    } catch (e) {
-      setState(() => _error = 'Could not read QR code: $e');
-      _handling = false;
-    }
-  }
+  Future<void> _handlePayload(Uint8List bytes) async {
+    if (_busy) return;
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
 
-  void _onDecoded(SignalingPayload payload) {
-    final kind = payload.isAnswer ? 'answer' : 'offer';
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Decoded $kind QR code successfully.')),
-    );
-    setState(() => _error = null);
+    try {
+      final hostSession = widget.hostSession;
+      if (hostSession != null) {
+        await hostSession.applyRemoteAnswer(bytes);
+        if (!mounted) return;
+        Navigator.of(context).push(MaterialPageRoute(
+          builder: (_) => InCallScreen(
+            session: hostSession,
+            showDebugPanel: widget.showDebugPanel,
+          ),
+        ));
+      } else {
+        final joinerSession = CallSession();
+        final answerBytes = await joinerSession.acceptOfferAndCreateAnswer(bytes);
+        if (!mounted) return;
+        Navigator.of(context).push(MaterialPageRoute(
+          builder: (_) => QrDisplayScreen(
+            role: CallRole.joiner,
+            payload: answerBytes,
+            session: joinerSession,
+          ),
+        ));
+      }
+    } on FormatException catch (e) {
+      setState(() {
+        _error = 'Could not read QR code: ${e.message}';
+        _busy = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = 'Could not complete the connection: $e';
+        _busy = false;
+      });
+    }
   }
 
   Future<void> _onDetect(BarcodeCapture capture) async {
     for (final barcode in capture.barcodes) {
       final bytes = barcode.rawBytes;
       if (bytes != null) {
-        _handlePayload(bytes);
+        await _handlePayload(bytes);
         return;
       }
     }
@@ -74,7 +107,7 @@ class _QrImportScreenState extends State<QrImportScreen> {
     for (final barcode in capture.barcodes) {
       final bytes = barcode.rawBytes;
       if (bytes != null) {
-        _handlePayload(bytes);
+        await _handlePayload(bytes);
         return;
       }
     }
@@ -84,33 +117,72 @@ class _QrImportScreenState extends State<QrImportScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Scan or import QR')),
-      body: Column(
-        children: [
-          Expanded(
-            child: MobileScanner(
-              controller: _controller,
-              onDetect: _onDetect,
-            ),
-          ),
-          if (_error != null)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              child: Text(
-                _error!,
-                style: TextStyle(color: Theme.of(context).colorScheme.error),
-                textAlign: TextAlign.center,
+      appBar: AppBar(
+        title: Text(widget.hostSession != null ? "Scan the joiner's answer" : 'Scan or import QR'),
+      ),
+      // SafeArea + a guaranteed-share bottom section (rather than an
+      // Expanded camera view eating all remaining space down to the
+      // system nav bar) so "Load from device" stays comfortably visible
+      // and reachable on every device, not squeezed against the edge.
+      body: SafeArea(
+        child: Column(
+          children: [
+            Expanded(
+              flex: 5,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  MobileScanner(
+                    controller: _controller,
+                    onDetect: _onDetect,
+                  ),
+                  if (_busy)
+                    Container(
+                      color: Colors.black54,
+                      child: const Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            CircularProgressIndicator(),
+                            SizedBox(height: 16),
+                            Text(
+                              'Connecting…',
+                              style: TextStyle(color: Colors.white),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ),
-          Padding(
-            padding: const EdgeInsets.all(24),
-            child: OutlinedButton.icon(
-              onPressed: _pickFromGallery,
-              icon: const Icon(Icons.photo_library),
-              label: const Text('Load from device'),
+            Expanded(
+              flex: 2,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (_error != null)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      child: Text(
+                        _error!,
+                        style: TextStyle(color: Theme.of(context).colorScheme.error),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: OutlinedButton.icon(
+                      onPressed: _busy ? null : _pickFromGallery,
+                      icon: const Icon(Icons.photo_library),
+                      label: const Text('Load from device'),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

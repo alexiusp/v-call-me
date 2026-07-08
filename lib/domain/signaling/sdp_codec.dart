@@ -128,6 +128,11 @@ List<String> _candidateLines(List<IceCandidateInfo> candidates) {
 /// mDNS `.local` hostnames by default for privacy. Those (and any IPv6
 /// candidates) don't fit the 4-byte IPv4 candidate slot and are silently
 /// skipped here - connectivity falls back to the srflx/relay candidates.
+///
+/// Loopback candidates (127.0.0.0/8) are also skipped: libwebrtc sometimes
+/// enumerates the loopback interface as a host candidate, but "127.0.0.1"
+/// means something different on every device, so sending it to the other
+/// side is never useful - it would just point them at their own machine.
 SignalingPayload extractFromSdp(
   String sdp, {
   required bool isAnswer,
@@ -188,6 +193,7 @@ List<IceCandidateInfo> _extractCandidates(String sdp) {
 
     final ip = match.group(3)!;
     if (!_isIpv4(ip)) continue; // mDNS hostname or IPv6 - see doc comment.
+    if (_isLoopback(ip)) continue; // see doc comment.
 
     final type = switch (match.group(5)!.toLowerCase()) {
       'host' => CandidateType.host,
@@ -216,3 +222,5 @@ bool _isIpv4(String value) {
   }
   return true;
 }
+
+bool _isLoopback(String ipv4) => ipv4.startsWith('127.');

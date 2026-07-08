@@ -13,10 +13,14 @@
       "deviceId": "emulator-5554"
     },
     {
+      // Wireless debugging (adb connect 192.168.178.67:45995). The port
+      // changes each time wireless debugging is re-enabled on the phone -
+      // if this stops finding the device, run `adb connect <ip>:<port>`
+      // with the new port shown on the phone and update deviceId here.
       "name": "Physical phone",
       "request": "launch",
       "type": "dart",
-      "deviceId": "25231FDEE000UF"
+      "deviceId": "192.168.178.67:45995"
     }
   ],
   "compounds": [

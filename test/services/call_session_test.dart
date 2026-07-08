@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_webrtc/flutter_webrtc.dart' show MediaStream;
 import 'package:v_call_me/data/turn/turn_credentials_service.dart';
 import 'package:v_call_me/domain/signaling/ice_candidate.dart';
 import 'package:v_call_me/domain/signaling/peer_connection_gateway.dart';
@@ -21,9 +22,19 @@ class _FakeGateway implements PeerConnectionGateway {
   bool disposed = false;
 
   final _controller = StreamController<PeerConnectionStatus>.broadcast();
+  final _remoteStreamController = StreamController<MediaStream>.broadcast();
 
   @override
   Stream<PeerConnectionStatus> get connectionState => _controller.stream;
+
+  @override
+  MediaStream? get localStream => null;
+
+  @override
+  Stream<MediaStream> get remoteStream => _remoteStreamController.stream;
+
+  @override
+  MediaStream? get currentRemoteStream => null;
 
   @override
   Future<void> open({required List<Map<String, dynamic>> iceServers}) async {
@@ -45,6 +56,7 @@ class _FakeGateway implements PeerConnectionGateway {
   Future<void> dispose() async {
     disposed = true;
     await _controller.close();
+    await _remoteStreamController.close();
   }
 
   void emitStatus(PeerConnectionStatus status) => _controller.add(status);

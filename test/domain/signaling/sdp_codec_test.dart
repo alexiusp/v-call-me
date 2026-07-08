@@ -118,7 +118,7 @@ void main() {
     });
 
     test('parses a realistic libwebrtc-style bundled offer, dedupes repeated candidates, '
-        'and skips mDNS/IPv6 candidates', () {
+        'and skips mDNS/IPv6/loopback candidates', () {
       const sdp = 'v=0\r\n'
           'o=- 4611731400430051336 2 IN IP4 127.0.0.1\r\n'
           's=-\r\n'
@@ -141,6 +141,7 @@ void main() {
           'a=candidate:3 1 tcp 1518280447 198.51.100.42 443 typ relay raddr 0.0.0.0 rport 0 generation 0\r\n'
           'a=candidate:4 1 udp 2122129151 8f2e1a3c-1234-4a5b-9c6d-abcdef012345.local 54322 typ host generation 0\r\n'
           'a=candidate:5 1 udp 2122129150 2001:db8::1 54323 typ host generation 0\r\n'
+          'a=candidate:6 1 tcp 2105524479 127.0.0.1 54324 typ host tcptype active generation 0\r\n'
           'a=end-of-candidates\r\n'
           'm=video 9 UDP/TLS/RTP/SAVPF 96\r\n'
           'c=IN IP4 0.0.0.0\r\n'
@@ -169,10 +170,32 @@ void main() {
       expect(payload.hasAudio, isTrue);
       expect(payload.hasVideo, isTrue);
 
-      // Deduped down to 3 (host/srflx/relay), mDNS host and IPv6 candidates skipped.
+      // Deduped down to 3 (host/srflx/relay); mDNS host, IPv6, and loopback
+      // candidates skipped.
       expect(payload.candidates.length, 3);
       expect(payload.candidates.map((c) => c.type).toSet(),
           {CandidateType.host, CandidateType.srflx, CandidateType.relay});
+      expect(payload.candidates.any((c) => c.ip == '127.0.0.1'), isFalse);
+    });
+
+    test('skips a loopback host candidate even when no other host candidate exists', () {
+      const sdp = 'v=0\r\n'
+          'o=- 1 2 IN IP4 127.0.0.1\r\n'
+          's=-\r\n'
+          't=0 0\r\n'
+          'a=group:BUNDLE 0\r\n'
+          'm=audio 9 UDP/TLS/RTP/SAVPF 111\r\n'
+          'a=ice-ufrag:abcd\r\n'
+          'a=ice-pwd:0123456789abcdef01234567\r\n'
+          'a=fingerprint:sha-256 00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:'
+          '00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00\r\n'
+          'a=candidate:1 1 tcp 2105524479 127.0.0.1 54324 typ host tcptype active generation 0\r\n'
+          'a=candidate:2 1 udp 1685987071 203.0.113.7 54321 typ srflx raddr 192.168.1.5 rport 54321 generation 0\r\n'
+          'a=end-of-candidates\r\n';
+
+      final payload = extractFromSdp(sdp, isAnswer: false, sessionId: Uint8List(6));
+      expect(payload.candidates.length, 1);
+      expect(payload.candidates.single.type, CandidateType.srflx);
     });
 
     test('treats a rejected (port 0) m-line as absent', () {

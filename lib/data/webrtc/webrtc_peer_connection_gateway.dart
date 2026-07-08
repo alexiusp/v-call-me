@@ -13,12 +13,23 @@ const _iceGatheringTimeout = Duration(seconds: 15);
 class WebrtcPeerConnectionGateway implements PeerConnectionGateway {
   RTCPeerConnection? _pc;
   MediaStream? _localStream;
+  MediaStream? _remoteMediaStream;
   final _connectionStateController =
       StreamController<PeerConnectionStatus>.broadcast();
+  final _remoteStreamController = StreamController<MediaStream>.broadcast();
 
   @override
   Stream<PeerConnectionStatus> get connectionState =>
       _connectionStateController.stream;
+
+  @override
+  MediaStream? get localStream => _localStream;
+
+  @override
+  Stream<MediaStream> get remoteStream => _remoteStreamController.stream;
+
+  @override
+  MediaStream? get currentRemoteStream => _remoteMediaStream;
 
   @override
   Future<void> open({required List<Map<String, dynamic>> iceServers}) async {
@@ -28,6 +39,12 @@ class WebrtcPeerConnectionGateway implements PeerConnectionGateway {
     });
     pc.onConnectionState = (state) {
       _connectionStateController.add(_mapConnectionState(state));
+    };
+    pc.onTrack = (event) {
+      if (event.streams.isNotEmpty) {
+        _remoteMediaStream = event.streams.first;
+        _remoteStreamController.add(event.streams.first);
+      }
     };
     _pc = pc;
   }
@@ -137,5 +154,6 @@ class WebrtcPeerConnectionGateway implements PeerConnectionGateway {
     await _pc?.close();
     await _pc?.dispose();
     await _connectionStateController.close();
+    await _remoteStreamController.close();
   }
 }

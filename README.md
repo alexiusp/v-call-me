@@ -8,7 +8,7 @@
 
 A single Flutter app where both participants use the same build — one takes the **host** role, the other the **joiner** role, chosen at runtime. There is **no signaling server**: the call is set up by exchanging QR codes manually through whatever messaging channel still works (Telegram, SMS, email, …), and the media itself flows peer-to-peer over WebRTC.
 
-> ℹ️ This is a personal project under active development. It is **not production-ready** and has **not yet been verified between two real devices**. See [Status](#status) before relying on it.
+> ℹ️ This is a personal project under active development. The full call flow works end-to-end and has been exercised on an emulator + a real device, but it has **not yet been verified between two real devices on their own separate networks** - that's the last step before sharing this with family. See [Status](#status) before relying on it.
 
 ---
 
@@ -67,7 +67,7 @@ The only always-on infrastructure is a **STUN/TURN server** for NAT traversal an
 
 ## Status
 
-Early development, **Android-only**. The signaling core is built and unit-tested; the QR-scan and in-call UI, plus real two-device verification, are still outstanding.
+Early development, **Android-only**, but functionally complete: the signaling core, QR scan/display, in-call UI, and disconnect handling are all wired end-to-end and have been manually exercised on an emulator + a real Pixel device. The one thing still outstanding is a genuine two-real-device call — once that's verified, this is ready to share with parents.
 
 **Implemented**
 - ✅ Compact binary signaling codec (offer/answer encode/decode) — unit-tested
@@ -76,13 +76,15 @@ Early development, **Android-only**. The signaling core is built and unit-tested
 - ✅ WebRTC adapter (`flutter_webrtc`) with camera/mic permission handling and non-trickle ICE gathering (with timeout)
 - ✅ TURN credentials service (fetches Metered / Open Relay `iceServers`)
 - ✅ QR **display + "share as file"** (raw byte-mode QR at error-correction level H)
+- ✅ QR **scanning / import** (camera + gallery via `mobile_scanner`/`image_picker`), wired to `CallSession.acceptOfferAndCreateAnswer()` / `applyRemoteAnswer()`, with a layout that keeps "Load from device" comfortably visible on every device
+- ✅ Full navigation from Home through QR display/import to the in-call screen, for both roles
+- ✅ In-call screen: local/remote video (`RTCVideoRenderer`), connecting/connected/failed states, hang-up button
+- ✅ Automatic return to Home with an explanatory message if the other side disconnects, fails, or closes the connection mid-call
+- ✅ Host-only debug panel (toggled via a checkbox on the offer QR screen) showing live connection status and the host's/joiner's IP addresses (from each side's decoded QR payload)
 - ✅ Android manifest, permissions, and toolchain fully wired; `flutter build apk --debug` succeeds
 
-**Not yet implemented**
-- ⏳ QR **scanning / import** (camera + gallery) — screen is a placeholder
-- ⏳ In-call screen wiring (local/remote media streams aren't surfaced yet)
-- ⏳ Navigation from the QR screens through to the call
-- ⏳ **Two-peer verification on real devices** — the SDP/codec pipeline is unit-tested but not yet proven against two live `RTCPeerConnection`s (highest-priority next step)
+**Not yet implemented / verified**
+- ⏳ **Two real devices on their own separate networks, end-to-end** — the highest-priority remaining step. Exercised so far on an emulator + one real device on the same network; a genuine two-phone test (ideally with one on cellular data) is what's left before sharing with parents.
 - ⏳ Real application ID (still the `com.example.v_call_me` placeholder) and release signing
 
 See [`DESIGN.md` §9–10](DESIGN.md) for the detailed implementation snapshot and open questions.
@@ -154,9 +156,9 @@ lib/
 │   └── qr_export.dart            # payload bytes -> PNG for sharing
 └── screens/
     ├── home_screen.dart          # "Start a call" / "Join a call" + CallRole enum
-    ├── qr_display_screen.dart    # renders + shares the offer/answer QR
-    ├── qr_import_screen.dart     # placeholder (scan/import not wired yet)
-    └── in_call_screen.dart       # placeholder (not reachable yet)
+    ├── qr_display_screen.dart    # renders + shares the offer/answer QR; host debug-panel checkbox
+    ├── qr_import_screen.dart     # camera/gallery scan -> CallSession -> next screen
+    └── in_call_screen.dart       # video renderers, controls, host-only debug panel
 
 test/                             # Unit + widget tests mirroring lib/
 ```

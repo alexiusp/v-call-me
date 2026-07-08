@@ -1,3 +1,5 @@
+import 'package:flutter_webrtc/flutter_webrtc.dart' show MediaStream;
+
 /// Coarse connection status, decoupled from `flutter_webrtc`'s
 /// `RTCPeerConnectionState` so domain/service code never has to import it.
 enum PeerConnectionStatus { connecting, connected, disconnected, failed, closed }
@@ -31,6 +33,19 @@ abstract class PeerConnectionGateway {
 
   /// Emits whenever the underlying peer connection's state changes.
   Stream<PeerConnectionStatus> get connectionState;
+
+  /// The local camera/mic stream, once acquired by [createLocalOffer] or
+  /// [createLocalAnswer]. Null beforehand.
+  MediaStream? get localStream;
+
+  /// Emits the remote peer's media stream once it arrives.
+  Stream<MediaStream> get remoteStream;
+
+  /// The remote peer's media stream, if it has already arrived by the time
+  /// something checks - so a late subscriber to [remoteStream] (a broadcast
+  /// stream with no replay) can still pick it up instead of only waiting for
+  /// a track event that may already have fired.
+  MediaStream? get currentRemoteStream;
 
   Future<void> dispose();
 }
