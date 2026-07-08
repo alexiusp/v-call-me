@@ -96,30 +96,40 @@ Once both descriptions are set on both sides, ICE connectivity checks run automa
 
 Flutter project scaffolded, Android-only, package `v_call_me`, org `com.example` (placeholder). See `AGENTS.md` for the target code architecture and dev environment notes.
 
-**Dependencies wired in** (`pubspec.yaml`): `flutter_webrtc`, `qr_flutter`, `mobile_scanner`, `permission_handler`, `share_plus`, `image_picker`.
+**Dependencies wired in** (`pubspec.yaml`): `flutter_webrtc`, `qr_flutter`, `mobile_scanner`, `permission_handler`, `share_plus`, `image_picker`, `http`.
 
 **Android manifest** (`android/app/src/main/AndroidManifest.xml`): camera, microphone, internet, network-state, and Bluetooth permissions declared, plus camera/microphone `<uses-feature>` entries.
 
 **Toolchain**: Flutter 3.44.5 (stable), AGP 8.11.1, Kotlin 2.2.20, Gradle 8.14.5. `compileSdk`/`minSdk`/NDK are left as Flutter's own defaults (currently 36 / 24 / 28.2.13676358) rather than hardcoded, so they track future Flutter upgrades automatically.
 
-**Code** (all under `lib/`, flat structure so far - screens + one service):
+**TURN/STUN credentials**: a Metered ("Open Relay Project") API key, read from `lib/config/turn_config.dart` (gitignored - copy `turn_config.example.dart` to `turn_config.dart` and fill in a real key from https://www.metered.ca/tools/openrelay/ to build). The endpoint returns a JSON array already shaped like WebRTC's `iceServers` config, so `data/turn/turn_credentials_service.dart` passes it straight through with no reshaping.
+
+**Code** (`lib/`, now split along the domain/data/services lines AGENTS.md describes, now that real logic has landed rather than stubs):
 - `main.dart` - app entry point (`VCallMeApp`), routes to `HomeScreen`.
 - `screens/home_screen.dart` - "Start a call" / "Join a call" buttons; navigates to `QrDisplayScreen` / `QrImportScreen`. Also defines the shared `CallRole` enum (host/joiner).
-- `screens/qr_display_screen.dart` - renders the current payload as a QR code (`qr_flutter`, error-correction level H per section 4) and offers a "Share as file" button (`share_plus`, PNG bytes via `services/qr_export.dart`) to avoid the lossy photo-recompression issue noted in section 4. For the host role, if no payload is passed in it drives `CallSession.createOffer()` itself and shows a loading state while awaiting it (currently ends in the error state since `createOffer()` is still unimplemented - see below). The joiner role still requires an explicit payload to be passed in.
-- `services/qr_export.dart` - renders QR payload data to PNG bytes (`QrPainter.toImageData`) for the display screen's share button.
+- `screens/qr_display_screen.dart` - renders the current payload (`Uint8List`, not text) as a QR code via `QrCode.fromUint8List`/`QrImageView.withQr` (raw byte-mode, error-correction level H per section 4 - no base64, so the QR stays at the byte budget section 4 sized around) and offers a "Share as file" button (`share_plus`, PNG bytes via `services/qr_export.dart`). For the host role, if no payload is passed in it drives `CallSession.createOffer()` itself and shows a loading state while awaiting it. The joiner role still requires an explicit payload to be passed in (QR *scanning* isn't wired up yet - see below).
+- `services/qr_export.dart` - renders QR payload bytes to PNG (`QrPainter.withQr` + `QrCode.fromUint8List`) for the display screen's share button.
 - `screens/qr_import_screen.dart` - placeholder screen; no camera scan or gallery import wired in yet (`mobile_scanner` / `image_picker` not wired in).
 - `screens/in_call_screen.dart` - placeholder screen; not yet reachable from navigation.
-- `services/call_session.dart` - `CallSession` class and `CallState` enum matching the state machine in section 5; `createOffer()`, `acceptOfferAndCreateAnswer()`, `applyRemoteAnswer()` all currently throw `UnimplementedError()`. No `flutter_webrtc` `RTCPeerConnection` wiring yet.
+- `services/call_session.dart` - `CallSession` class and `CallState` enum matching the state machine in section 5. Fully implemented: orchestrates TURN credentials, the SDP/binary codecs, and the peer connection gateway (see below) through `createOffer()`/`acceptOfferAndCreateAnswer()`/`applyRemoteAnswer()`, all now returning/accepting `Uint8List` (the raw compact payload) instead of `String`. Also checks that a received answer's session id matches the offer it replied to (section 4).
+- `domain/signaling/` - plain-Dart, no Flutter imports, fully unit-tested: `signaling_payload.dart` (the section-4 schema as Dart fields), `ice_candidate.dart`, `signaling_codec.dart` (binary encode/decode), `sdp_codec.dart` (hand-written, targeted - not a generic library - SDP ⟷ `SignalingPayload` conversion; hardcodes Opus/VP8 per section 4), `peer_connection_gateway.dart` (the `PeerConnectionGateway` abstraction AGENTS.md names, so `flutter_webrtc` never has to be imported into domain code).
+- `data/turn/turn_credentials_service.dart` - fetches/decodes the Metered endpoint via `package:http` (injectable `http.Client` for tests).
+- `data/webrtc/webrtc_peer_connection_gateway.dart` - the only `PeerConnectionGateway` implementation: wraps `flutter_webrtc`'s `RTCPeerConnection`, requests camera/mic permissions before `getUserMedia`, and drives non-trickle ICE gathering (waits for `RTCIceGatheringStateComplete`, with a 15s timeout so a dead TURN server can't hang the UI).
 
-**Not implemented yet**: SDP compact-payload encode/decode (section 4), actual `RTCPeerConnection`/ICE gathering logic, QR *scanning/import* (`mobile_scanner`/`image_picker`), TURN/STUN credential configuration, navigation from the QR screens through to `InCallScreen`, release signing config.
+**Known limitations of the current implementation**:
+- Modern Android WebRTC hides host ICE candidates behind mDNS `.local` hostnames by default; `sdp_codec.dart`'s `extractFromSdp` skips any candidate whose address isn't a literal IPv4 dotted-quad (so mDNS host candidates, and any IPv6 candidates, are silently dropped - connectivity falls back to the srflx/relay candidates, which are unaffected).
+- **Unit-tested but not two-peer-verified**: `flutter test` can't exercise a real `RTCPeerConnection` (needs a device/emulator), so the domain codecs and `CallSession`'s state machine are covered against a fake `PeerConnectionGateway`, but actual ICE/DTLS negotiation between two real devices using the hand-built template SDP hasn't been confirmed yet. Test host+joiner on two devices/emulators before relying on this for a real call.
+- No in-call screen wiring yet - `CallSession` doesn't currently expose the local/remote `MediaStream` for rendering (see open questions).
 
-**Verified working**: `flutter analyze` and `flutter test` pass (including widget tests for `QrDisplayScreen` using a fake `CallSession`); `flutter build apk --debug` succeeds end-to-end on Android (produces a working `app-debug.apk`).
+**Not implemented yet**: QR *scanning/import* (`mobile_scanner`/`image_picker`), navigation from the QR screens through to `InCallScreen`, release signing config.
+
+**Verified working**: `flutter analyze` and `flutter test` pass (unit tests for the binary/SDP codecs, the TURN credentials service against a mocked HTTP client, `CallSession`'s state machine against a fake gateway - including a full host↔joiner offer/answer round trip through the real codecs - and the `QrDisplayScreen` widget tests); `flutter build apk --debug` succeeds end-to-end on Android.
 
 ## 10. Open questions / next steps
 
-- SDP reconstruction template - building a valid offer/answer string from the compact schema fields, and wiring `CallSession` to `flutter_webrtc`'s `RTCPeerConnection`. This is what currently blocks the host QR screen from showing a real offer (`createOffer()` is still a stub).
+- **Manually verify two real peers connect** - the SDP template/codec pipeline is unit-tested but not proven against two real `RTCPeerConnection`s yet (see "known limitations" above). Highest-priority next step before relying on this for an actual call.
 - QR *scanning/import* implementation using the already-added `mobile_scanner`/`image_picker` packages (display/share side is done, see above).
-- TURN/STUN server credentials and configuration (free tier vs. self-hosted `coturn`).
+- Wire `CallSession`'s local/remote media streams through to `InCallScreen` and hook up navigation from the QR screens once connected.
 - Real application ID / namespace (currently placeholder `com.example.v_call_me`).
 - Release signing configuration (release builds are currently debug-signed).
 - Distribution plan for the parents' side given potential Play Store restrictions (sideloaded APK vs. store listing).

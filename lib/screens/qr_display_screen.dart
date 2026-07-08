@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
@@ -17,7 +19,7 @@ class QrDisplayScreen extends StatefulWidget {
       : session = session ?? CallSession();
 
   final CallRole role;
-  final String? payload;
+  final Uint8List? payload;
   final CallSession session;
 
   @override
@@ -25,10 +27,10 @@ class QrDisplayScreen extends StatefulWidget {
 }
 
 class _QrDisplayScreenState extends State<QrDisplayScreen> {
-  late final Future<String> _payloadFuture =
+  late final Future<Uint8List> _payloadFuture =
       widget.payload != null ? Future.value(widget.payload) : _generatePayload();
 
-  Future<String> _generatePayload() async {
+  Future<Uint8List> _generatePayload() async {
     switch (widget.role) {
       case CallRole.host:
         return widget.session.createOffer();
@@ -49,7 +51,7 @@ class _QrDisplayScreenState extends State<QrDisplayScreen> {
       appBar: AppBar(
         title: Text(widget.role == CallRole.host ? 'Offer QR' : 'Answer QR'),
       ),
-      body: FutureBuilder<String>(
+      body: FutureBuilder<Uint8List>(
         future: _payloadFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState != ConnectionState.done) {
@@ -85,7 +87,7 @@ class _QrDisplayScreenState extends State<QrDisplayScreen> {
 class _QrContent extends StatelessWidget {
   const _QrContent({required this.data, required this.role});
 
-  final String data;
+  final Uint8List data;
   final CallRole role;
 
   Future<void> _share(BuildContext context) async {
@@ -102,6 +104,10 @@ class _QrContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final qrCode = QrCode.fromUint8List(
+      data: data,
+      errorCorrectLevel: QrErrorCorrectLevel.H,
+    );
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -114,10 +120,8 @@ class _QrContent extends StatelessWidget {
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: QrImageView(
-                data: data,
-                version: QrVersions.auto,
-                errorCorrectionLevel: QrErrorCorrectLevel.H,
+              child: QrImageView.withQr(
+                qr: qrCode,
                 size: 280,
               ),
             ),

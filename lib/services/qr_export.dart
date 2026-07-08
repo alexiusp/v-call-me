@@ -5,12 +5,12 @@ import 'package:qr_flutter/qr_flutter.dart';
 /// Renders QR payload data to a PNG image, for lossless file sharing per
 /// DESIGN.md section 4's "practical QR/sharing notes" (file sends over photo
 /// sends to avoid recompression artifacts).
-Future<Uint8List?> renderQrPng(String data, {double size = 1024}) async {
-  final painter = QrPainter(
+Future<Uint8List?> renderQrPng(Uint8List data, {double size = 1024}) async {
+  final qrCode = QrCode.fromUint8List(
     data: data,
-    version: QrVersions.auto,
-    errorCorrectionLevel: QrErrorCorrectLevel.H,
+    errorCorrectLevel: QrErrorCorrectLevel.H,
   );
+  final painter = QrPainter.withQr(qr: qrCode);
   final imageData = await painter.toImageData(size);
   return imageData?.buffer.asUint8List();
 }

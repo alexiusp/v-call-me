@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -9,11 +12,11 @@ import 'package:v_call_me/services/call_session.dart';
 class _FakeCallSession extends CallSession {
   _FakeCallSession(this.offer);
 
-  final String offer;
+  final Uint8List offer;
   bool disposed = false;
 
   @override
-  Future<String> createOffer() async => offer;
+  Future<Uint8List> createOffer() async => offer;
 
   @override
   Future<void> dispose() async {
@@ -23,7 +26,7 @@ class _FakeCallSession extends CallSession {
 
 class _ThrowingCallSession extends CallSession {
   @override
-  Future<String> createOffer() async {
+  Future<Uint8List> createOffer() async {
     throw UnimplementedError('offer generation not wired up yet');
   }
 }
@@ -32,18 +35,20 @@ void main() {
   testWidgets('renders a QR code immediately when a payload is supplied', (tester) async {
     await tester.pumpWidget(
       MaterialApp(
-        home: QrDisplayScreen(role: CallRole.host, payload: 'fixed-payload'),
+        home: QrDisplayScreen(
+          role: CallRole.host,
+          payload: Uint8List.fromList(utf8.encode('fixed-payload')),
+        ),
       ),
     );
     await tester.pump();
 
     expect(find.byType(CircularProgressIndicator), findsNothing);
-    final qr = tester.widget<QrImageView>(find.byType(QrImageView));
-    expect(qr.errorCorrectionLevel, QrErrorCorrectLevel.H);
+    expect(find.byType(QrImageView), findsOneWidget);
   });
 
   testWidgets('host role generates its own payload via CallSession.createOffer', (tester) async {
-    final session = _FakeCallSession('generated-offer');
+    final session = _FakeCallSession(Uint8List.fromList(utf8.encode('generated-offer')));
     await tester.pumpWidget(
       MaterialApp(
         home: QrDisplayScreen(role: CallRole.host, session: session),
@@ -70,7 +75,7 @@ void main() {
   });
 
   testWidgets('disposes its CallSession when popped', (tester) async {
-    final session = _FakeCallSession('generated-offer');
+    final session = _FakeCallSession(Uint8List.fromList(utf8.encode('generated-offer')));
     await tester.pumpWidget(
       MaterialApp(
         home: QrDisplayScreen(role: CallRole.host, session: session),

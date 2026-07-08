@@ -33,6 +33,9 @@ migrate_working_dir/
 .pub/
 /build/
 
+# Real TURN/STUN API credentials - see lib/config/turn_config.example.dart
+/lib/config/turn_config.dart
+
 # Symbolication related
 app.*.symbols
 
