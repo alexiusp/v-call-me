@@ -1,6 +1,6 @@
 # v_call_me
 
-**A serverless, block-resistant video calling app to stay in touch with family — built for reaching parents in Russia when mainstream apps get throttled or blocked.**
+**A serverless, block-resistant video calling app to stay in touch with family or friends — built for reaching loved ones in regions where mainstream apps get throttled or blocked.**
 
 ![Platform](https://img.shields.io/badge/platform-Android-3DDC84)
 ![Flutter](https://img.shields.io/badge/Flutter-3.44.5-02569B)
@@ -67,7 +67,7 @@ The only always-on infrastructure is a **STUN/TURN server** for NAT traversal an
 
 ## Status
 
-Early development, **Android-only**, but functionally complete: the signaling core, QR scan/display, in-call UI, and disconnect handling are all wired end-to-end and have been manually exercised on an emulator + a real Pixel device. The one thing still outstanding is a genuine two-real-device call — once that's verified, this is ready to share with parents.
+Early development, **Android-only**, but functionally complete: the signaling core, QR scan/display, in-call UI, and disconnect handling are all wired end-to-end and have been manually exercised on an emulator + a real Pixel device. The one thing still outstanding is a genuine two-real-device call — once that's verified, this is ready for real use.
 
 **Implemented**
 - ✅ Compact binary signaling codec (offer/answer encode/decode) — unit-tested
@@ -84,7 +84,7 @@ Early development, **Android-only**, but functionally complete: the signaling co
 - ✅ Android manifest, permissions, and toolchain fully wired; `flutter build apk --debug` succeeds
 
 **Not yet implemented / verified**
-- ⏳ **Two real devices on their own separate networks, end-to-end** — the highest-priority remaining step. Exercised so far on an emulator + one real device on the same network; a genuine two-phone test (ideally with one on cellular data) is what's left before sharing with parents.
+- ⏳ **Two real devices on their own separate networks, end-to-end** — the highest-priority remaining step. Exercised so far on an emulator + one real device on the same network; a genuine two-phone test (ideally with one on cellular data) is what's left before relying on it for real calls.
 - ⏳ Real application ID (still the `com.example.v_call_me` placeholder) and release signing
 
 See [`DESIGN.md` §9–10](DESIGN.md) for the detailed implementation snapshot and open questions.

@@ -2,7 +2,7 @@
 
 ## 1. Goal
 
-A video calling app to stay in touch with parents in Russia, resilient to the government blocking or throttling mainstream apps (WhatsApp, Telegram calls, etc.). Single Flutter app, Android-first, used by both sides � "host" and "joiner" are roles within the same app, not separate apps.
+A video calling app for staying in touch with family or friends in regions where mainstream apps are blocked or throttled (WhatsApp, Telegram calls, etc.). Single Flutter app, Android-first, used by both sides � "host" and "joiner" are roles within the same app, not separate apps.
 
 ## 2. Threat model / constraints
 
@@ -16,8 +16,8 @@ A video calling app to stay in touch with parents in Russia, resilient to the go
 Three logical components, no signaling server:
 
 - **STUN + TURN relay** � used by both phones for NAT traversal (STUN) and as a fallback relay if a direct peer-to-peer path can't be established (TURN). Free tiers (Open Relay Project, Metered.ca) are sufficient for development and likely for this app's actual low-volume usage; self-hosting `coturn` on a cheap VPS is a fallback if more control or bandwidth is needed later.
-- **Your phone (host role)** � starts the call, generates the offer.
-- **Parents' phone (joiner role)** � receives the offer via QR/file, generates the answer.
+- **One side's phone (host role)** � starts the call, generates the offer.
+- **The other side's phone (joiner role)** � receives the offer via QR/file, generates the answer.
 
 Between the two phones there are two distinct connections:
 1. **Manual QR/file exchange** � carries the offer, then the answer. Out-of-band, via any messaging app that still works. Not part of the app's network layer at all � it's just an image file the user shares manually.
@@ -128,7 +128,7 @@ Flutter project scaffolded, Android-only, package `v_call_me`, org `com.example`
 
 ## 10. Open questions / next steps
 
-- **Manually verify two real peers connect over their own separate networks (not just emulator + one phone on the same LAN)** - this is the last step before the app is ready to share with parents. Everything else (signaling, QR handshake, in-call UI, disconnect handling) is implemented and has been exercised on an emulator and a real device; what's unverified is a genuine two-real-device call end-to-end, ideally with the two phones on different networks (e.g. one on cellular) so a same-NAT hairpin quirk can't mask a real P2P/TURN problem.
+- **Manually verify two real peers connect over their own separate networks (not just emulator + one phone on the same LAN)** - this is the last step before the app is ready for real use. Everything else (signaling, QR handshake, in-call UI, disconnect handling) is implemented and has been exercised on an emulator and a real device; what's unverified is a genuine two-real-device call end-to-end, ideally with the two phones on different networks (e.g. one on cellular) so a same-NAT hairpin quirk can't mask a real P2P/TURN problem.
 - Real application ID / namespace (currently placeholder `com.example.v_call_me`).
 - Release signing configuration (release builds are currently debug-signed).
-- Distribution plan for the parents' side given potential Play Store restrictions (sideloaded APK vs. store listing).
+- Distribution plan for the other side given potential Play Store restrictions (sideloaded APK vs. store listing).
