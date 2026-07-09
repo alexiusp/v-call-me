@@ -128,7 +128,7 @@ Flutter project scaffolded, Android-only, package `v_call_me`, org `com.example`
 - Navigation is a plain forward `Navigator.push` chain with no `WillPopScope` guard, so backing out mid-call lands on the previous QR screen rather than confirming an intentional hang-up; the hang-up button itself correctly pops back to `HomeScreen`.
 - The share-target listener (`shared_qr_intent_listener.dart`) only tracks one pending host session at a time via `PendingHostSession.current`; if a user somehow has two host `QrDisplayScreen`s open at once (not reachable through normal navigation today), a shared answer image would be applied to whichever one is currently on top.
 
-**Not implemented yet**: release signing config, real application ID/namespace.
+**Store-prep done**: release signing (upload keystore + gitignored `android/key.properties`), custom launcher icon, and real application ID/namespace `dev.podgaev.v_call_me`.
 
 **Verified working**: `flutter analyze` and `flutter test` pass (unit tests for the binary/SDP codecs, the TURN credentials service against a mocked HTTP client, `CallSession`'s state machine against a fake gateway - including a full host↔joiner offer/answer round trip through the real codecs - and the `QrDisplayScreen` widget tests); `flutter build apk --debug` succeeds end-to-end on Android. Manually exercised on an emulator + a real Pixel 6 Pro over wireless `adb`: offer/answer QR generation and scanning, the debug panel, the disconnect-handling message, and the QR-import layout fix all behave as intended.
 
@@ -138,5 +138,5 @@ Flutter project scaffolded, Android-only, package `v_call_me`, org `com.example`
 - **Manually verify the share-target flow on a real device** - `flutter analyze`/`flutter test`/`flutter build apk --debug` all pass with `share_handler` wired in, but the actual "share a QR photo from Telegram/SMS and pick this app" path hasn't been exercised on a real device yet.
 - **Manually verify the `vcallme://` link flow on a real device** - same caveat as above for `app_links`: analyze/test/build all pass, but tapping a `vcallme://call?d=...` link from inside a real messaging app (cold start and warm start) hasn't been exercised on a real device yet.
 - Application ID / namespace: **done** — set to `dev.podgaev.v_call_me` (matches the Google Play Console listing).
-- Release signing configuration (release builds are currently debug-signed).
+- Release signing: **done** — upload keystore wired via gitignored `android/key.properties`; `flutter build appbundle --release` yields an AAB signed with the upload key.
 - Distribution plan for the other side given potential Play Store restrictions (sideloaded APK vs. store listing).

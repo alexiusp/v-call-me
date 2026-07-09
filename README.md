@@ -82,10 +82,10 @@ Early development, **Android-only**, but functionally complete: the signaling co
 - ✅ Automatic return to Home with an explanatory message if the other side disconnects, fails, or closes the connection mid-call
 - ✅ Host-only debug panel (toggled via a checkbox on the offer QR screen) showing live connection status and the host's/joiner's IP addresses (from each side's decoded QR payload)
 - ✅ Android manifest, permissions, and toolchain fully wired; `flutter build apk --debug` succeeds
+- ✅ Store-prep: application ID `dev.podgaev.v_call_me`, custom launcher icon, and release signing (upload keystore via gitignored `key.properties`) — `flutter build appbundle --release` produces a signed AAB
 
 **Not yet implemented / verified**
 - ⏳ **Two real devices on their own separate networks, end-to-end** — the highest-priority remaining step. Exercised so far on an emulator + one real device on the same network; a genuine two-phone test (ideally with one on cellular data) is what's left before relying on it for real calls.
-- ⏳ Release signing configuration (release builds are still debug-signed); the application ID is now set to `dev.podgaev.v_call_me`
 
 See [`DESIGN.md` §9–10](DESIGN.md) for the detailed implementation snapshot and open questions.
 
