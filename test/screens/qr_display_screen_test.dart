@@ -2,12 +2,28 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
+import 'package:v_call_me/l10n/l10n.dart';
 import 'package:v_call_me/screens/home_screen.dart';
 import 'package:v_call_me/screens/qr_display_screen.dart';
 import 'package:v_call_me/services/call_session.dart';
+
+/// [QrDisplayScreen] reads localized strings via `context.l10n`, so tests
+/// need `AppLocalizations` wired up the same way [VCallMeApp] wires it -
+/// `ProviderScope` is included too since it costs nothing and matches the
+/// real app shell.
+Widget _wrap(Widget home) {
+  return ProviderScope(
+    child: MaterialApp(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: home,
+    ),
+  );
+}
 
 class _FakeCallSession extends CallSession {
   _FakeCallSession(this.offer);
@@ -34,8 +50,8 @@ class _ThrowingCallSession extends CallSession {
 void main() {
   testWidgets('renders a QR code immediately when a payload is supplied', (tester) async {
     await tester.pumpWidget(
-      MaterialApp(
-        home: QrDisplayScreen(
+      _wrap(
+        QrDisplayScreen(
           role: CallRole.host,
           payload: Uint8List.fromList(utf8.encode('fixed-payload')),
         ),
@@ -50,9 +66,7 @@ void main() {
   testWidgets('host role generates its own payload via CallSession.createOffer', (tester) async {
     final session = _FakeCallSession(Uint8List.fromList(utf8.encode('generated-offer')));
     await tester.pumpWidget(
-      MaterialApp(
-        home: QrDisplayScreen(role: CallRole.host, session: session),
-      ),
+      _wrap(QrDisplayScreen(role: CallRole.host, session: session)),
     );
 
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
@@ -64,9 +78,7 @@ void main() {
 
   testWidgets('shows an error state when offer generation fails', (tester) async {
     await tester.pumpWidget(
-      MaterialApp(
-        home: QrDisplayScreen(role: CallRole.host, session: _ThrowingCallSession()),
-      ),
+      _wrap(QrDisplayScreen(role: CallRole.host, session: _ThrowingCallSession())),
     );
 
     await tester.pumpAndSettle();
@@ -77,13 +89,11 @@ void main() {
   testWidgets('disposes its CallSession when popped', (tester) async {
     final session = _FakeCallSession(Uint8List.fromList(utf8.encode('generated-offer')));
     await tester.pumpWidget(
-      MaterialApp(
-        home: QrDisplayScreen(role: CallRole.host, session: session),
-      ),
+      _wrap(QrDisplayScreen(role: CallRole.host, session: session)),
     );
     await tester.pumpAndSettle();
 
-    await tester.pumpWidget(const MaterialApp(home: SizedBox()));
+    await tester.pumpWidget(_wrap(const SizedBox()));
 
     expect(session.disposed, isTrue);
   });

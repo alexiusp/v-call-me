@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/l10n.dart';
 import '../widgets/settings_button.dart';
 import 'qr_display_screen.dart';
 import 'qr_import_screen.dart';
@@ -11,7 +12,7 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('v-call-me'),
+        title: Text(context.l10n.appTitle),
         actions: const [SettingsButton()],
       ),
       body: Center(
@@ -24,9 +25,9 @@ class HomeScreen extends StatelessWidget {
                   builder: (_) => QrDisplayScreen(role: CallRole.host),
                 ),
               ),
-              child: const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                child: Text('Start a call'),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                child: Text(context.l10n.startCallButton),
               ),
             ),
             const SizedBox(height: 16),
@@ -34,9 +35,9 @@ class HomeScreen extends StatelessWidget {
               onPressed: () => Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const QrImportScreen()),
               ),
-              child: const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                child: Text('Join a call'),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                child: Text(context.l10n.joinCallButton),
               ),
             ),
           ],

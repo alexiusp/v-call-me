@@ -1,0 +1,156 @@
+{
+  "@@locale": "en",
+
+  "appTitle": "v-call-me",
+  "@appTitle": {"description": "App name, shown on the home screen's app bar."},
+
+  "startCallButton": "Start a call",
+  "@startCallButton": {"description": "Home screen button to begin the host flow."},
+
+  "joinCallButton": "Join a call",
+  "@joinCallButton": {"description": "Home screen button to begin the joiner flow."},
+
+  "settingsTitle": "Settings",
+  "@settingsTitle": {"description": "Title of the settings screen's app bar."},
+
+  "settingsTooltip": "Settings",
+  "@settingsTooltip": {"description": "Tooltip on the cog icon that opens the settings screen."},
+
+  "showDebugPanelTitle": "Show debug panel during call",
+  "@showDebugPanelTitle": {"description": "Settings screen checkbox title."},
+
+  "showDebugPanelSubtitle": "Displays the joiner's connection info on the call screen",
+  "@showDebugPanelSubtitle": {"description": "Settings screen checkbox subtitle."},
+
+  "languageSettingTitle": "Language",
+  "@languageSettingTitle": {"description": "Settings screen section title for the language picker."},
+
+  "languageSystemDefault": "System default",
+  "@languageSystemDefault": {"description": "Language picker option that follows the device locale."},
+
+  "offerQrTitle": "Offer QR",
+  "@offerQrTitle": {"description": "App bar title when showing the host's offer QR code."},
+
+  "answerQrTitle": "Answer QR",
+  "@answerQrTitle": {"description": "App bar title when showing the joiner's answer QR code."},
+
+  "gatheringConnectionInfo": "Gathering connection info…",
+  "@gatheringConnectionInfo": {"description": "Loading message while ICE gathering happens."},
+
+  "couldNotGenerateQr": "Could not generate QR code: {error}",
+  "@couldNotGenerateQr": {
+    "description": "Error shown when QR payload generation fails.",
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "sendToOtherSideHost": "Send this to the other side, then wait for their answer QR.",
+  "@sendToOtherSideHost": {"description": "Instructions under the host's offer QR code."},
+
+  "sendBackToHostJoiner": "Send this back to the host to complete the connection.",
+  "@sendBackToHostJoiner": {"description": "Instructions under the joiner's answer QR code."},
+
+  "shareButton": "Share",
+  "@shareButton": {"description": "Button to share the QR payload as a link."},
+
+  "shareAsImageButton": "Share as image instead",
+  "@shareAsImageButton": {"description": "Button to share the QR payload as a PNG image."},
+
+  "gotAnswerButton": "I've got their answer, scan it",
+  "@gotAnswerButton": {"description": "Host button to move on to scanning the joiner's answer QR."},
+
+  "waitingForHost": "Waiting for the host to connect…",
+  "@waitingForHost": {"description": "Joiner's waiting message shown under the answer QR code."},
+
+  "scanJoinerAnswerTitle": "Scan the joiner's answer",
+  "@scanJoinerAnswerTitle": {"description": "App bar title when the host scans the joiner's answer QR."},
+
+  "scanOrImportTitle": "Scan or import QR",
+  "@scanOrImportTitle": {"description": "App bar title when the joiner scans the host's offer QR."},
+
+  "connectingEllipsis": "Connecting…",
+  "@connectingEllipsis": {"description": "Generic in-progress connecting message."},
+
+  "noQrCodeFound": "No QR code found in the selected image.",
+  "@noQrCodeFound": {"description": "Error when a gallery-picked image has no QR code."},
+
+  "qrCodeFoundButUnreadable": "QR code found, but its content could not be read.",
+  "@qrCodeFoundButUnreadable": {"description": "Error when a QR code's payload can't be decoded."},
+
+  "loadFromDevice": "Load from device",
+  "@loadFromDevice": {"description": "Button to pick a QR code image from the gallery."},
+
+  "couldNotReadQrCode": "Could not read QR code: {message}",
+  "@couldNotReadQrCode": {
+    "description": "Error shown when a scanned/imported QR code fails to decode.",
+    "placeholders": {
+      "message": {"type": "String"}
+    }
+  },
+
+  "couldNotCompleteConnection": "Could not complete the connection: {error}",
+  "@couldNotCompleteConnection": {
+    "description": "Error shown when applying a decoded payload to the call session fails.",
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "callEndedConnectionLost": "Call ended: connection was lost.",
+  "@callEndedConnectionLost": {"description": "Snack bar shown when the peer disconnects."},
+
+  "callEndedConnectionFailed": "Call ended: connection failed.",
+  "@callEndedConnectionFailed": {"description": "Snack bar shown when the peer connection fails."},
+
+  "callEndedMessage": "Call ended.",
+  "@callEndedMessage": {"description": "Snack bar shown when the peer connection closes normally."},
+
+  "connectedStatus": "Connected",
+  "@connectedStatus": {"description": "In-call status label."},
+
+  "disconnectedStatus": "Disconnected",
+  "@disconnectedStatus": {"description": "In-call status label."},
+
+  "connectionFailedStatus": "Connection failed",
+  "@connectionFailedStatus": {"description": "In-call status label."},
+
+  "callEndedStatus": "Call ended",
+  "@callEndedStatus": {"description": "In-call status label."},
+
+  "debugStatusLine": "DEBUG  ·  status: {status}",
+  "@debugStatusLine": {
+    "description": "Debug panel line showing the raw connection status.",
+    "placeholders": {
+      "status": {"type": "String"}
+    }
+  },
+
+  "debugHostIpLine": "host ip: {ips}",
+  "@debugHostIpLine": {
+    "description": "Debug panel line showing the host's candidate IPs.",
+    "placeholders": {
+      "ips": {"type": "String"}
+    }
+  },
+
+  "debugJoinerIpLine": "joiner ip: {ips}",
+  "@debugJoinerIpLine": {
+    "description": "Debug panel line showing the joiner's candidate IPs.",
+    "placeholders": {
+      "ips": {"type": "String"}
+    }
+  },
+
+  "debugIpUnknown": "unknown",
+  "@debugIpUnknown": {"description": "Debug panel placeholder when a payload hasn't arrived yet."},
+
+  "debugIpNone": "none",
+  "@debugIpNone": {"description": "Debug panel placeholder when a payload has no candidate IPs."},
+
+  "couldNotOpenCallLink": "Could not open that call link.",
+  "@couldNotOpenCallLink": {"description": "Snack bar shown when a deep link fails to decode."},
+
+  "couldNotReadSharedQrCode": "Could not read the shared QR code.",
+  "@couldNotReadSharedQrCode": {"description": "Snack bar shown when a shared image has no readable QR code."}
+}

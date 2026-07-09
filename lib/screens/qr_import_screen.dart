@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
+import '../l10n/l10n.dart';
 import '../services/call_session.dart';
 import '../services/qr_payload_router.dart';
 import '../widgets/settings_button.dart';
@@ -53,12 +54,12 @@ class _QrImportScreenState extends State<QrImportScreen> {
       );
     } on FormatException catch (e) {
       setState(() {
-        _error = 'Could not read QR code: ${e.message}';
+        _error = context.l10n.couldNotReadQrCode(e.message);
         _busy = false;
       });
     } catch (e) {
       setState(() {
-        _error = 'Could not complete the connection: $e';
+        _error = context.l10n.couldNotCompleteConnection('$e');
         _busy = false;
       });
     }
@@ -81,7 +82,7 @@ class _QrImportScreenState extends State<QrImportScreen> {
 
     final capture = await _controller.analyzeImage(file.path);
     if (capture == null || capture.barcodes.isEmpty) {
-      setState(() => _error = 'No QR code found in the selected image.');
+      setState(() => _error = context.l10n.noQrCodeFound);
       return;
     }
 
@@ -92,14 +93,16 @@ class _QrImportScreenState extends State<QrImportScreen> {
         return;
       }
     }
-    setState(() => _error = 'QR code found, but its content could not be read.');
+    setState(() => _error = context.l10n.qrCodeFoundButUnreadable);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.hostSession != null ? "Scan the joiner's answer" : 'Scan or import QR'),
+        title: Text(
+          widget.hostSession != null ? context.l10n.scanJoinerAnswerTitle : context.l10n.scanOrImportTitle,
+        ),
         actions: const [SettingsButton()],
       ),
       // SafeArea + a guaranteed-share bottom section (rather than an
@@ -121,15 +124,15 @@ class _QrImportScreenState extends State<QrImportScreen> {
                   if (_busy)
                     Container(
                       color: Colors.black54,
-                      child: const Center(
+                      child: Center(
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            CircularProgressIndicator(),
-                            SizedBox(height: 16),
+                            const CircularProgressIndicator(),
+                            const SizedBox(height: 16),
                             Text(
-                              'Connecting…',
-                              style: TextStyle(color: Colors.white),
+                              context.l10n.connectingEllipsis,
+                              style: const TextStyle(color: Colors.white),
                             ),
                           ],
                         ),
@@ -157,7 +160,7 @@ class _QrImportScreenState extends State<QrImportScreen> {
                     child: OutlinedButton.icon(
                       onPressed: _busy ? null : _pickFromGallery,
                       icon: const Icon(Icons.photo_library),
-                      label: const Text('Load from device'),
+                      label: Text(context.l10n.loadFromDevice),
                     ),
                   ),
                 ],

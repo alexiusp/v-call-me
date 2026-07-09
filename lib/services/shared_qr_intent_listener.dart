@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:share_handler/share_handler.dart';
 
+import '../l10n/l10n.dart';
 import '../main.dart' show rootScaffoldMessengerKey;
 import 'pending_host_session.dart';
 import 'qr_payload_router.dart';
@@ -64,8 +65,9 @@ class _SharedQrIntentListenerState extends State<SharedQrIntentListener> {
           hostSession: PendingHostSession.current,
         );
       } catch (_) {
+        if (!mounted) return;
         rootScaffoldMessengerKey.currentState?.showSnackBar(
-          const SnackBar(content: Text('Could not read the shared QR code.')),
+          SnackBar(content: Text(context.l10n.couldNotReadSharedQrCode)),
         );
       }
       return;

@@ -6,6 +6,7 @@ import 'package:flutter_webrtc/flutter_webrtc.dart';
 
 import '../domain/signaling/peer_connection_gateway.dart';
 import '../domain/signaling/signaling_payload.dart';
+import '../l10n/l10n.dart';
 import '../main.dart';
 import '../services/call_session.dart';
 import '../state/settings.dart';
@@ -61,9 +62,9 @@ class _InCallScreenState extends ConsumerState<InCallScreen> {
   void _maybeHandleCallEnded(PeerConnectionStatus status) {
     if (_callEnded) return;
     final message = switch (status) {
-      PeerConnectionStatus.disconnected => 'Call ended: connection was lost.',
-      PeerConnectionStatus.failed => 'Call ended: connection failed.',
-      PeerConnectionStatus.closed => 'Call ended.',
+      PeerConnectionStatus.disconnected => context.l10n.callEndedConnectionLost,
+      PeerConnectionStatus.failed => context.l10n.callEndedConnectionFailed,
+      PeerConnectionStatus.closed => context.l10n.callEndedMessage,
       PeerConnectionStatus.connecting || PeerConnectionStatus.connected => null,
     };
     if (message == null) return;
@@ -152,24 +153,24 @@ class _InCallScreenState extends ConsumerState<InCallScreen> {
         children: [
           const CircularProgressIndicator(color: Colors.white),
           const SizedBox(height: 16),
-          Text(_statusMessage(_status), style: const TextStyle(color: Colors.white)),
+          Text(_statusMessage(context, _status), style: const TextStyle(color: Colors.white)),
         ],
       ),
     );
   }
 
-  String _statusMessage(PeerConnectionStatus status) {
+  String _statusMessage(BuildContext context, PeerConnectionStatus status) {
     switch (status) {
       case PeerConnectionStatus.connecting:
-        return 'Connecting…';
+        return context.l10n.connectingEllipsis;
       case PeerConnectionStatus.connected:
-        return 'Connected';
+        return context.l10n.connectedStatus;
       case PeerConnectionStatus.disconnected:
-        return 'Disconnected';
+        return context.l10n.disconnectedStatus;
       case PeerConnectionStatus.failed:
-        return 'Connection failed';
+        return context.l10n.connectionFailedStatus;
       case PeerConnectionStatus.closed:
-        return 'Call ended';
+        return context.l10n.callEndedStatus;
     }
   }
 }
@@ -219,20 +220,20 @@ class _DebugPanel extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('DEBUG  ·  status: ${status.name}'),
+            Text(context.l10n.debugStatusLine(status.name)),
             const SizedBox(height: 4),
-            Text('host ip: ${_ips(localPayload)}'),
-            Text('joiner ip: ${_ips(remotePayload)}'),
+            Text(context.l10n.debugHostIpLine(_ips(context, localPayload))),
+            Text(context.l10n.debugJoinerIpLine(_ips(context, remotePayload))),
           ],
         ),
       ),
     );
   }
 
-  String _ips(SignalingPayload? payload) {
-    if (payload == null) return 'unknown';
+  String _ips(BuildContext context, SignalingPayload? payload) {
+    if (payload == null) return context.l10n.debugIpUnknown;
     final ips = payload.candidates.map((c) => c.ip).toSet();
-    if (ips.isEmpty) return 'none';
+    if (ips.isEmpty) return context.l10n.debugIpNone;
     return ips.join(', ');
   }
 }

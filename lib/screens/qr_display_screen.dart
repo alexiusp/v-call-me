@@ -6,6 +6,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../domain/signaling/peer_connection_gateway.dart';
+import '../l10n/l10n.dart';
 import '../services/call_session.dart';
 import '../services/pending_host_session.dart';
 import '../services/qr_export.dart';
@@ -96,20 +97,20 @@ class _QrDisplayScreenState extends State<QrDisplayScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.role == CallRole.host ? 'Offer QR' : 'Answer QR'),
+        title: Text(widget.role == CallRole.host ? context.l10n.offerQrTitle : context.l10n.answerQrTitle),
         actions: const [SettingsButton()],
       ),
       body: FutureBuilder<Uint8List>(
         future: _payloadFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState != ConnectionState.done) {
-            return const Center(
+            return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 16),
-                  Text('Gathering connection info…'),
+                  const CircularProgressIndicator(),
+                  const SizedBox(height: 16),
+                  Text(context.l10n.gatheringConnectionInfo),
                 ],
               ),
             );
@@ -118,7 +119,7 @@ class _QrDisplayScreenState extends State<QrDisplayScreen> {
             return Center(
               child: Padding(
                 padding: const EdgeInsets.all(24),
-                child: Text('Could not generate QR code: ${snapshot.error}'),
+                child: Text(context.l10n.couldNotGenerateQr('${snapshot.error}')),
               ),
             );
           }
@@ -207,42 +208,42 @@ class _QrContent extends StatelessWidget {
               const SizedBox(height: 24),
               Text(
                 role == CallRole.host
-                    ? 'Send this to the other side, then wait for their answer QR.'
-                    : 'Send this back to the host to complete the connection.',
+                    ? context.l10n.sendToOtherSideHost
+                    : context.l10n.sendBackToHostJoiner,
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 24),
               FilledButton.icon(
                 onPressed: () => _shareLink(context),
                 icon: const Icon(Icons.share),
-                label: const Text('Share'),
+                label: Text(context.l10n.shareButton),
               ),
               const SizedBox(height: 4),
               TextButton.icon(
                 onPressed: () => _shareImage(context),
                 icon: const Icon(Icons.qr_code),
-                label: const Text('Share as image instead'),
+                label: Text(context.l10n.shareAsImageButton),
               ),
               if (onScanAnswer != null && hasShared) ...[
                 const SizedBox(height: 8),
                 OutlinedButton.icon(
                   onPressed: onScanAnswer,
                   icon: const Icon(Icons.qr_code_scanner),
-                  label: const Text("I've got their answer, scan it"),
+                  label: Text(context.l10n.gotAnswerButton),
                 ),
               ],
               if (role == CallRole.joiner) ...[
                 const SizedBox(height: 24),
-                const Row(
+                Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    SizedBox(
+                    const SizedBox(
                       width: 16,
                       height: 16,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     ),
-                    SizedBox(width: 12),
-                    Text('Waiting for the host to connect…'),
+                    const SizedBox(width: 12),
+                    Text(context.l10n.waitingForHost),
                   ],
                 ),
               ],
