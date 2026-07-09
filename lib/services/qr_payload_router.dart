@@ -22,7 +22,6 @@ Future<void> handleDecodedQrPayload(
   BuildContext context,
   Uint8List bytes, {
   CallSession? hostSession,
-  bool showDebugPanel = false,
 }) async {
   if (hostSession != null) {
     await hostSession.applyRemoteAnswer(bytes);
@@ -31,10 +30,7 @@ Future<void> handleDecodedQrPayload(
     }
     if (!context.mounted) return;
     Navigator.of(context).push(MaterialPageRoute(
-      builder: (_) => InCallScreen(
-        session: hostSession,
-        showDebugPanel: showDebugPanel,
-      ),
+      builder: (_) => InCallScreen(session: hostSession),
     ));
   } else {
     final joinerSession = CallSession();

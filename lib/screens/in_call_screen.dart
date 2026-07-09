@@ -1,29 +1,31 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 
 import '../domain/signaling/peer_connection_gateway.dart';
 import '../domain/signaling/signaling_payload.dart';
 import '../main.dart';
 import '../services/call_session.dart';
+import '../state/settings.dart';
 
-/// The active call UI: local/remote video, basic controls, and (optionally,
-/// host-only) a debug panel showing the joiner's decoded connection info -
-/// handy for confirming a real physical-device connection actually worked.
+/// The active call UI: local/remote video, basic controls, and (optionally)
+/// a debug panel showing the joiner's decoded connection info - handy for
+/// confirming a real physical-device connection actually worked. Shown when
+/// enabled via [showDebugPanelProvider] (see `SettingsScreen`).
 ///
 /// Shared regardless of role, since the session is symmetric once connected.
-class InCallScreen extends StatefulWidget {
-  const InCallScreen({super.key, required this.session, this.showDebugPanel = false});
+class InCallScreen extends ConsumerStatefulWidget {
+  const InCallScreen({super.key, required this.session});
 
   final CallSession session;
-  final bool showDebugPanel;
 
   @override
-  State<InCallScreen> createState() => _InCallScreenState();
+  ConsumerState<InCallScreen> createState() => _InCallScreenState();
 }
 
-class _InCallScreenState extends State<InCallScreen> {
+class _InCallScreenState extends ConsumerState<InCallScreen> {
   final _localRenderer = RTCVideoRenderer();
   final _remoteRenderer = RTCVideoRenderer();
 
@@ -128,7 +130,7 @@ class _InCallScreenState extends State<InCallScreen> {
                     ),
                   ),
                   _Controls(onHangUp: _hangUp),
-                  if (widget.showDebugPanel)
+                  if (ref.watch(showDebugPanelProvider))
                     _DebugPanel(
                       status: _status,
                       localPayload: widget.session.localPayload,

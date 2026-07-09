@@ -6,6 +6,7 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../services/call_session.dart';
 import '../services/qr_payload_router.dart';
+import '../widgets/settings_button.dart';
 
 /// Camera scanner and/or gallery image picker for an offer/answer QR code,
 /// reused for both roles per DESIGN.md section 6.
@@ -18,10 +19,9 @@ import '../services/qr_payload_router.dart';
 /// [CallSession.acceptOfferAndCreateAnswer], and the resulting answer is
 /// shown on [QrDisplayScreen] for the host to scan back.
 class QrImportScreen extends StatefulWidget {
-  const QrImportScreen({super.key, this.hostSession, this.showDebugPanel = false});
+  const QrImportScreen({super.key, this.hostSession});
 
   final CallSession? hostSession;
-  final bool showDebugPanel;
 
   @override
   State<QrImportScreen> createState() => _QrImportScreenState();
@@ -50,7 +50,6 @@ class _QrImportScreenState extends State<QrImportScreen> {
         context,
         bytes,
         hostSession: widget.hostSession,
-        showDebugPanel: widget.showDebugPanel,
       );
     } on FormatException catch (e) {
       setState(() {
@@ -101,6 +100,7 @@ class _QrImportScreenState extends State<QrImportScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.hostSession != null ? "Scan the joiner's answer" : 'Scan or import QR'),
+        actions: const [SettingsButton()],
       ),
       // SafeArea + a guaranteed-share bottom section (rather than an
       // Expanded camera view eating all remaining space down to the

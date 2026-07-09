@@ -10,6 +10,7 @@ import '../services/call_session.dart';
 import '../services/pending_host_session.dart';
 import '../services/qr_export.dart';
 import '../services/qr_link_codec.dart';
+import '../widgets/settings_button.dart';
 import 'home_screen.dart';
 import 'in_call_screen.dart';
 import 'qr_import_screen.dart';
@@ -21,11 +22,10 @@ import 'qr_import_screen.dart';
 /// generates it itself by driving [session] through the state machine in
 /// DESIGN.md section 5, showing a loading state while ICE gathering happens.
 ///
-/// The host also gets a "show debug panel" checkbox here (state carried
-/// forward through [QrImportScreen] to [InCallScreen]) and a button to move
-/// on to scanning the joiner's answer QR. The joiner has neither: once its
-/// answer QR is shown, this screen just waits for the connection to
-/// complete and moves on to [InCallScreen] automatically.
+/// The host also gets a button here to move on to scanning the joiner's
+/// answer QR. The joiner doesn't: once its answer QR is shown, this screen
+/// just waits for the connection to complete and moves on to [InCallScreen]
+/// automatically.
 class QrDisplayScreen extends StatefulWidget {
   QrDisplayScreen({super.key, required this.role, this.payload, CallSession? session})
       : session = session ?? CallSession();
@@ -42,7 +42,7 @@ class _QrDisplayScreenState extends State<QrDisplayScreen> {
   late final Future<Uint8List> _payloadFuture =
       widget.payload != null ? Future.value(widget.payload) : _generatePayload();
 
-  bool _showDebugPanel = false;
+  bool _hasShared = false;
   StreamSubscription<PeerConnectionStatus>? _connectionSub;
 
   Future<Uint8List> _generatePayload() async {
@@ -69,7 +69,7 @@ class _QrDisplayScreenState extends State<QrDisplayScreen> {
       _connectionSub = widget.session.connectionStatus.listen((status) {
         if (status == PeerConnectionStatus.connected && mounted) {
           Navigator.of(context).push(MaterialPageRoute(
-            builder: (_) => InCallScreen(session: widget.session, showDebugPanel: false),
+            builder: (_) => InCallScreen(session: widget.session),
           ));
         }
       });
@@ -78,10 +78,7 @@ class _QrDisplayScreenState extends State<QrDisplayScreen> {
 
   void _scanJoinerAnswer() {
     Navigator.of(context).push(MaterialPageRoute(
-      builder: (_) => QrImportScreen(
-        hostSession: widget.session,
-        showDebugPanel: _showDebugPanel,
-      ),
+      builder: (_) => QrImportScreen(hostSession: widget.session),
     ));
   }
 
@@ -100,6 +97,7 @@ class _QrDisplayScreenState extends State<QrDisplayScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.role == CallRole.host ? 'Offer QR' : 'Answer QR'),
+        actions: const [SettingsButton()],
       ),
       body: FutureBuilder<Uint8List>(
         future: _payloadFuture,
@@ -127,10 +125,8 @@ class _QrDisplayScreenState extends State<QrDisplayScreen> {
           return _QrContent(
             data: snapshot.data!,
             role: widget.role,
-            showDebugPanel: _showDebugPanel,
-            onShowDebugPanelChanged: widget.role == CallRole.host
-                ? (value) => setState(() => _showDebugPanel = value)
-                : null,
+            hasShared: _hasShared,
+            onShared: () => setState(() => _hasShared = true),
             onScanAnswer: widget.role == CallRole.host ? _scanJoinerAnswer : null,
           );
         },
@@ -143,15 +139,15 @@ class _QrContent extends StatelessWidget {
   const _QrContent({
     required this.data,
     required this.role,
-    required this.showDebugPanel,
-    required this.onShowDebugPanelChanged,
+    required this.hasShared,
+    required this.onShared,
     required this.onScanAnswer,
   });
 
   final Uint8List data;
   final CallRole role;
-  final bool showDebugPanel;
-  final ValueChanged<bool>? onShowDebugPanelChanged;
+  final bool hasShared;
+  final VoidCallback onShared;
   final VoidCallback? onScanAnswer;
 
   // The default share action: a tappable link carrying the same payload as
@@ -159,6 +155,7 @@ class _QrContent extends StatelessWidget {
   // (see `deep_link_listener.dart`) with no scanning or gallery step -
   // easier for a non-technical recipient than the image below.
   Future<void> _shareLink(BuildContext context) async {
+    onShared();
     await SharePlus.instance.share(
       ShareParams(text: buildShareLink(data).toString()),
     );
@@ -167,6 +164,7 @@ class _QrContent extends StatelessWidget {
   // Fallback for a channel that mangles custom-scheme links, or someone who
   // prefers a picture over a link.
   Future<void> _shareImage(BuildContext context) async {
+    onShared();
     final pngBytes = await renderQrPng(data);
     if (pngBytes == null) return;
     final fileName = role == CallRole.host ? 'call-offer.png' : 'call-answer.png';
@@ -225,17 +223,7 @@ class _QrContent extends StatelessWidget {
                 icon: const Icon(Icons.qr_code),
                 label: const Text('Share as image instead'),
               ),
-              if (onShowDebugPanelChanged != null) ...[
-                const SizedBox(height: 8),
-                CheckboxListTile(
-                  value: showDebugPanel,
-                  onChanged: (value) => onShowDebugPanelChanged!(value ?? false),
-                  controlAffinity: ListTileControlAffinity.leading,
-                  title: const Text('Show debug panel during call'),
-                  subtitle: const Text("Displays the joiner's connection info on the call screen"),
-                ),
-              ],
-              if (onScanAnswer != null) ...[
+              if (onScanAnswer != null && hasShared) ...[
                 const SizedBox(height: 8),
                 OutlinedButton.icon(
                   onPressed: onScanAnswer,

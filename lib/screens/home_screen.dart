@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../widgets/settings_button.dart';
 import 'qr_display_screen.dart';
 import 'qr_import_screen.dart';
 
@@ -9,7 +10,10 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('v-call-me')),
+      appBar: AppBar(
+        title: const Text('v-call-me'),
+        actions: const [SettingsButton()],
+      ),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
