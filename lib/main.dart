@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'screens/home_screen.dart';
+import 'services/deep_link_listener.dart';
 import 'services/shared_qr_intent_listener.dart';
 
 /// App-wide messenger key so screens further down the stack (e.g.
@@ -25,7 +26,9 @@ class VCallMeApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blueAccent),
         useMaterial3: true,
       ),
-      home: const SharedQrIntentListener(child: HomeScreen()),
+      home: const SharedQrIntentListener(
+        child: DeepLinkListener(child: HomeScreen()),
+      ),
     );
   }
 }

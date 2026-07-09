@@ -9,6 +9,7 @@ import '../domain/signaling/peer_connection_gateway.dart';
 import '../services/call_session.dart';
 import '../services/pending_host_session.dart';
 import '../services/qr_export.dart';
+import '../services/qr_link_codec.dart';
 import 'home_screen.dart';
 import 'in_call_screen.dart';
 import 'qr_import_screen.dart';
@@ -153,7 +154,19 @@ class _QrContent extends StatelessWidget {
   final ValueChanged<bool>? onShowDebugPanelChanged;
   final VoidCallback? onScanAnswer;
 
-  Future<void> _share(BuildContext context) async {
+  // The default share action: a tappable link carrying the same payload as
+  // the QR code, so the other side can open straight into the right screen
+  // (see `deep_link_listener.dart`) with no scanning or gallery step -
+  // easier for a non-technical recipient than the image below.
+  Future<void> _shareLink(BuildContext context) async {
+    await SharePlus.instance.share(
+      ShareParams(text: buildShareLink(data).toString()),
+    );
+  }
+
+  // Fallback for a channel that mangles custom-scheme links, or someone who
+  // prefers a picture over a link.
+  Future<void> _shareImage(BuildContext context) async {
     final pngBytes = await renderQrPng(data);
     if (pngBytes == null) return;
     final fileName = role == CallRole.host ? 'call-offer.png' : 'call-answer.png';
@@ -202,9 +215,15 @@ class _QrContent extends StatelessWidget {
               ),
               const SizedBox(height: 24),
               FilledButton.icon(
-                onPressed: () => _share(context),
+                onPressed: () => _shareLink(context),
                 icon: const Icon(Icons.share),
-                label: const Text('Share as file'),
+                label: const Text('Share'),
+              ),
+              const SizedBox(height: 4),
+              TextButton.icon(
+                onPressed: () => _shareImage(context),
+                icon: const Icon(Icons.qr_code),
+                label: const Text('Share as image instead'),
               ),
               if (onShowDebugPanelChanged != null) ...[
                 const SizedBox(height: 8),

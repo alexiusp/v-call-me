@@ -15,7 +15,7 @@
     <uses-feature android:name="android.hardware.microphone" android:required="true"/>
 
     <application
-        android:label="v_call_me"
+        android:label="VCall Me"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
@@ -51,6 +51,16 @@
                 <action android:name="android.intent.action.SEND_MULTIPLE"/>
                 <category android:name="android.intent.category.DEFAULT"/>
                 <data android:mimeType="image/*"/>
+            </intent-filter>
+            <!-- Lets a tapped "vcallme://call?d=..." link (the "Share" button
+                 on QrDisplayScreen's default text share) open straight into
+                 this app with the offer/answer payload already attached -
+                 no scanning or gallery step at all. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="vcallme" android:host="call"/>
             </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.

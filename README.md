@@ -85,7 +85,7 @@ Early development, **Android-only**, but functionally complete: the signaling co
 
 **Not yet implemented / verified**
 - ⏳ **Two real devices on their own separate networks, end-to-end** — the highest-priority remaining step. Exercised so far on an emulator + one real device on the same network; a genuine two-phone test (ideally with one on cellular data) is what's left before relying on it for real calls.
-- ⏳ Real application ID (still the `com.example.v_call_me` placeholder) and release signing
+- ⏳ Release signing configuration (release builds are still debug-signed); the application ID is now set to `dev.podgaev.v_call_me`
 
 See [`DESIGN.md` §9–10](DESIGN.md) for the detailed implementation snapshot and open questions.
 

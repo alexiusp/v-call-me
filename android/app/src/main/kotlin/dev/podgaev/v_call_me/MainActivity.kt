@@ -1,4 +1,4 @@
-package com.example.v_call_me
+package dev.podgaev.v_call_me
 
 import io.flutter.embedding.android.FlutterActivity
 
