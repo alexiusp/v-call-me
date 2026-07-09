@@ -5,9 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../services/call_session.dart';
-import 'home_screen.dart';
-import 'in_call_screen.dart';
-import 'qr_display_screen.dart';
+import '../services/qr_payload_router.dart';
 
 /// Camera scanner and/or gallery image picker for an offer/answer QR code,
 /// reused for both roles per DESIGN.md section 6.
@@ -48,28 +46,12 @@ class _QrImportScreenState extends State<QrImportScreen> {
     });
 
     try {
-      final hostSession = widget.hostSession;
-      if (hostSession != null) {
-        await hostSession.applyRemoteAnswer(bytes);
-        if (!mounted) return;
-        Navigator.of(context).push(MaterialPageRoute(
-          builder: (_) => InCallScreen(
-            session: hostSession,
-            showDebugPanel: widget.showDebugPanel,
-          ),
-        ));
-      } else {
-        final joinerSession = CallSession();
-        final answerBytes = await joinerSession.acceptOfferAndCreateAnswer(bytes);
-        if (!mounted) return;
-        Navigator.of(context).push(MaterialPageRoute(
-          builder: (_) => QrDisplayScreen(
-            role: CallRole.joiner,
-            payload: answerBytes,
-            session: joinerSession,
-          ),
-        ));
-      }
+      await handleDecodedQrPayload(
+        context,
+        bytes,
+        hostSession: widget.hostSession,
+        showDebugPanel: widget.showDebugPanel,
+      );
     } on FormatException catch (e) {
       setState(() {
         _error = 'Could not read QR code: ${e.message}';

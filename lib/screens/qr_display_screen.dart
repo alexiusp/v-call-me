@@ -7,6 +7,7 @@ import 'package:share_plus/share_plus.dart';
 
 import '../domain/signaling/peer_connection_gateway.dart';
 import '../services/call_session.dart';
+import '../services/pending_host_session.dart';
 import '../services/qr_export.dart';
 import 'home_screen.dart';
 import 'in_call_screen.dart';
@@ -55,6 +56,12 @@ class _QrDisplayScreenState extends State<QrDisplayScreen> {
   @override
   void initState() {
     super.initState();
+    if (widget.role == CallRole.host) {
+      // Lets the share-target listener recognize a later shared QR image as
+      // this call's answer rather than a fresh offer (see
+      // `PendingHostSession`'s doc comment).
+      PendingHostSession.current = widget.session;
+    }
     if (widget.role == CallRole.joiner) {
       // The joiner has no further manual step: once the host scans this
       // answer QR and ICE connects, move straight on to the call screen.
@@ -79,6 +86,9 @@ class _QrDisplayScreenState extends State<QrDisplayScreen> {
 
   @override
   void dispose() {
+    if (PendingHostSession.current == widget.session) {
+      PendingHostSession.current = null;
+    }
     _connectionSub?.cancel();
     widget.session.dispose();
     super.dispose();
