@@ -1,7 +1,7 @@
 {
   "@@locale": "en",
 
-  "appTitle": "v-call-me",
+  "appTitle": "VCall Me",
   "@appTitle": {"description": "App name, shown on the home screen's app bar."},
 
   "startCallButton": "Start a call",

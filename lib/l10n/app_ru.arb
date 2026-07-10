@@ -1,7 +1,7 @@
 {
   "@@locale": "ru",
 
-  "appTitle": "v-call-me",
+  "appTitle": "VCall Me",
   "startCallButton": "Начать звонок",
   "joinCallButton": "Присоединиться к звонку",
   "settingsTitle": "Настройки",

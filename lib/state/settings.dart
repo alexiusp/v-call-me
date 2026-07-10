@@ -1,5 +1,15 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+/// Holds the [SharedPreferences] instance loaded in `main()`. Overridden there
+/// via `ProviderScope(overrides: …)` so settings notifiers can read and persist
+/// values synchronously, without an async gate on the first frame.
+final sharedPreferencesProvider = Provider<SharedPreferences>(
+  (ref) => throw UnimplementedError(
+    'sharedPreferencesProvider must be overridden in main()',
+  ),
+);
 
 /// Whether [InCallScreen] shows the connection-info debug panel.
 ///
@@ -33,10 +43,21 @@ extension AppLocaleLocale on AppLocale {
 }
 
 class AppLocaleNotifier extends Notifier<AppLocale> {
-  @override
-  AppLocale build() => AppLocale.system;
+  static const _prefsKey = 'app_locale';
 
-  void set(AppLocale value) => state = value;
+  @override
+  AppLocale build() {
+    final saved = ref.read(sharedPreferencesProvider).getString(_prefsKey);
+    return AppLocale.values.firstWhere(
+      (value) => value.name == saved,
+      orElse: () => AppLocale.system,
+    );
+  }
+
+  void set(AppLocale value) {
+    state = value;
+    ref.read(sharedPreferencesProvider).setString(_prefsKey, value.name);
+  }
 }
 
 final appLocaleProvider = NotifierProvider<AppLocaleNotifier, AppLocale>(
