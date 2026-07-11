@@ -1,11 +1,13 @@
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../l10n/l10n.dart';
 import '../services/call_session.dart';
+import '../services/qr_link_codec.dart';
 import '../services/qr_payload_router.dart';
 import '../widgets/settings_button.dart';
 
@@ -67,7 +69,7 @@ class _QrImportScreenState extends State<QrImportScreen> {
 
   Future<void> _onDetect(BarcodeCapture capture) async {
     for (final barcode in capture.barcodes) {
-      final bytes = barcode.rawBytes;
+      final bytes = decodeQrText(barcode.rawValue);
       if (bytes != null) {
         await _handlePayload(bytes);
         return;
@@ -87,7 +89,7 @@ class _QrImportScreenState extends State<QrImportScreen> {
     }
 
     for (final barcode in capture.barcodes) {
-      final bytes = barcode.rawBytes;
+      final bytes = decodeQrText(barcode.rawValue);
       if (bytes != null) {
         await _handlePayload(bytes);
         return;
@@ -155,14 +157,18 @@ class _QrImportScreenState extends State<QrImportScreen> {
                         textAlign: TextAlign.center,
                       ),
                     ),
-                  Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: OutlinedButton.icon(
-                      onPressed: _busy ? null : _pickFromGallery,
-                      icon: const Icon(Icons.photo_library),
-                      label: Text(context.l10n.loadFromDevice),
+                  // Gallery import relies on `analyzeImage`, which mobile_scanner
+                  // doesn't implement on web; hide it there and rely on the live
+                  // camera (or the shareable link) instead.
+                  if (!kIsWeb)
+                    Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: OutlinedButton.icon(
+                        onPressed: _busy ? null : _pickFromGallery,
+                        icon: const Icon(Icons.photo_library),
+                        label: Text(context.l10n.loadFromDevice),
+                      ),
                     ),
-                  ),
                 ],
               ),
             ),

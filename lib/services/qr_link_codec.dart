@@ -28,3 +28,19 @@ Uint8List? decodeShareLink(Uri uri) {
     return null;
   }
 }
+
+/// Recovers the payload from the text content of a scanned QR code.
+///
+/// The QR carries the same `vcallme://call?d=...` URI as [buildShareLink] -
+/// text, not raw byte-mode bytes - so it round-trips through a scanner's
+/// `rawValue` on every platform. (Reading raw byte-mode content via `rawBytes`
+/// works natively but not on web, where scanners surface the QR bitstream's
+/// mode indicator instead of the payload.) Returns null if [text] is empty or
+/// isn't one of our links.
+Uint8List? decodeQrText(String? text) {
+  final trimmed = text?.trim();
+  if (trimmed == null || trimmed.isEmpty) return null;
+  final uri = Uri.tryParse(trimmed);
+  if (uri == null) return null;
+  return decodeShareLink(uri);
+}

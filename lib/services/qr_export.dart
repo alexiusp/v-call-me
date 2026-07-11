@@ -4,6 +4,8 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
+import 'qr_link_codec.dart';
+
 /// Renders QR payload data to a PNG image, for lossless file sharing per
 /// DESIGN.md section 4's "practical QR/sharing notes" (file sends over photo
 /// sends to avoid recompression artifacts).
@@ -16,8 +18,11 @@ import 'package:qr_flutter/qr_flutter.dart';
 /// black, making the code unreadable. Painting a white background rect
 /// ourselves before the QR code avoids that.
 Future<Uint8List?> renderQrPng(Uint8List data, {double size = 1024}) async {
-  final qrCode = QrCode.fromUint8List(
-    data: data,
+  // Encode the `vcallme://` link text (see `qr_display_screen.dart` and
+  // `decodeQrText`) so the shared image scans back the same way on every
+  // platform.
+  final qrCode = QrCode.fromData(
+    data: buildShareLink(data).toString(),
     errorCorrectLevel: QrErrorCorrectLevel.H,
   );
   final painter = QrPainter.withQr(qr: qrCode);

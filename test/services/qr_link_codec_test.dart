@@ -43,4 +43,22 @@ void main() {
 
     expect(decoded, isNull);
   });
+
+  test('decodeQrText round-trips the link text a scanner returns via rawValue', () {
+    final payload = Uint8List.fromList(List.generate(120, (i) => (i * 7 + 5) % 256));
+
+    // The QR now carries the same link text; a scanner surfaces it as rawValue.
+    final qrText = buildShareLink(payload).toString();
+    final decoded = decodeQrText(qrText);
+
+    expect(decoded, payload);
+  });
+
+  test('decodeQrText returns null for empty, null, or non-link text', () {
+    expect(decodeQrText(null), isNull);
+    expect(decodeQrText(''), isNull);
+    expect(decodeQrText('   '), isNull);
+    expect(decodeQrText('just some scanned text'), isNull);
+    expect(decodeQrText('https://example.com/call?d=AQID'), isNull);
+  });
 }

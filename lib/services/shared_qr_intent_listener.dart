@@ -9,6 +9,7 @@ import 'package:share_handler/share_handler.dart';
 import '../l10n/l10n.dart';
 import '../main.dart' show rootScaffoldMessengerKey;
 import 'pending_host_session.dart';
+import 'qr_link_codec.dart';
 import 'qr_payload_router.dart';
 
 /// Wraps the app's home screen and watches for a QR image shared in from
@@ -55,10 +56,8 @@ class _SharedQrIntentListenerState extends State<SharedQrIntentListener> {
       final capture = await _scanner.analyzeImage(attachment.path);
       Uint8List? bytes;
       for (final barcode in capture?.barcodes ?? const []) {
-        if (barcode.rawBytes != null) {
-          bytes = barcode.rawBytes;
-          break;
-        }
+        bytes = decodeQrText(barcode.rawValue);
+        if (bytes != null) break;
       }
       if (bytes == null) continue;
       if (!mounted) return;

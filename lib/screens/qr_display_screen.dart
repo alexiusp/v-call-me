@@ -174,8 +174,12 @@ class _QrContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final qrCode = QrCode.fromUint8List(
-      data: data,
+    // Carry the same `vcallme://call?d=...` link the Share button uses, as QR
+    // *text* rather than raw byte-mode bytes: text round-trips through a
+    // scanner's `rawValue` on every platform, whereas byte-mode `rawBytes`
+    // isn't recoverable on web (see `decodeQrText`).
+    final qrCode = QrCode.fromData(
+      data: buildShareLink(data).toString(),
       errorCorrectLevel: QrErrorCorrectLevel.H,
     );
     return SingleChildScrollView(
