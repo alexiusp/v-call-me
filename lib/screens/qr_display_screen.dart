@@ -43,7 +43,6 @@ class _QrDisplayScreenState extends State<QrDisplayScreen> {
   late final Future<Uint8List> _payloadFuture =
       widget.payload != null ? Future.value(widget.payload) : _generatePayload();
 
-  bool _hasShared = false;
   StreamSubscription<PeerConnectionStatus>? _connectionSub;
 
   Future<Uint8List> _generatePayload() async {
@@ -126,8 +125,6 @@ class _QrDisplayScreenState extends State<QrDisplayScreen> {
           return _QrContent(
             data: snapshot.data!,
             role: widget.role,
-            hasShared: _hasShared,
-            onShared: () => setState(() => _hasShared = true),
             onScanAnswer: widget.role == CallRole.host ? _scanJoinerAnswer : null,
           );
         },
@@ -140,15 +137,11 @@ class _QrContent extends StatelessWidget {
   const _QrContent({
     required this.data,
     required this.role,
-    required this.hasShared,
-    required this.onShared,
     required this.onScanAnswer,
   });
 
   final Uint8List data;
   final CallRole role;
-  final bool hasShared;
-  final VoidCallback onShared;
   final VoidCallback? onScanAnswer;
 
   // The default share action: a tappable link carrying the same payload as
@@ -156,7 +149,6 @@ class _QrContent extends StatelessWidget {
   // (see `deep_link_listener.dart`) with no scanning or gallery step -
   // easier for a non-technical recipient than the image below.
   Future<void> _shareLink(BuildContext context) async {
-    onShared();
     await SharePlus.instance.share(
       ShareParams(text: buildShareLink(data).toString()),
     );
@@ -165,7 +157,6 @@ class _QrContent extends StatelessWidget {
   // Fallback for a channel that mangles custom-scheme links, or someone who
   // prefers a picture over a link.
   Future<void> _shareImage(BuildContext context) async {
-    onShared();
     final pngBytes = await renderQrPng(data);
     if (pngBytes == null) return;
     final fileName = role == CallRole.host ? 'call-offer.png' : 'call-answer.png';
@@ -224,7 +215,7 @@ class _QrContent extends StatelessWidget {
                 icon: const Icon(Icons.qr_code),
                 label: Text(context.l10n.shareAsImageButton),
               ),
-              if (onScanAnswer != null && hasShared) ...[
+              if (onScanAnswer != null) ...[
                 const SizedBox(height: 8),
                 OutlinedButton.icon(
                   onPressed: onScanAnswer,

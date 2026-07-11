@@ -63,6 +63,23 @@ void main() {
     expect(find.byType(QrImageView), findsOneWidget);
   });
 
+  testWidgets('host shows the scan-answer button without sharing first', (tester) async {
+    await tester.pumpWidget(
+      _wrap(
+        QrDisplayScreen(
+          role: CallRole.host,
+          payload: Uint8List.fromList(utf8.encode('fixed-payload')),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    // Regression: the button to move on to scanning the joiner's answer must be
+    // available immediately, not gated behind tapping Share first - a host who
+    // shares the QR by screenshot or screen-share would otherwise be stuck.
+    expect(find.text("I've got their answer, scan it"), findsOneWidget);
+  });
+
   testWidgets('host role generates its own payload via CallSession.createOffer', (tester) async {
     final session = _FakeCallSession(Uint8List.fromList(utf8.encode('generated-offer')));
     await tester.pumpWidget(

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:share_handler/share_handler.dart';
@@ -33,6 +34,10 @@ class _SharedQrIntentListenerState extends State<SharedQrIntentListener> {
   @override
   void initState() {
     super.initState();
+    // share_handler only implements Android/iOS share intents; on web its
+    // platform channel is missing, so wiring it up throws MissingPluginException.
+    // There's no share sheet to receive from on web anyway, so skip it there.
+    if (kIsWeb) return;
     final handler = ShareHandlerPlatform.instance;
     handler.getInitialSharedMedia().then((media) {
       handler.resetInitialSharedMedia();
