@@ -4,7 +4,7 @@ Context file for AI coding agents (Claude Code, Cursor, etc.) working in this re
 
 ## Project
 
-Single Flutter app, Android-only, package `v_call_me`, org `com.example` (placeholder - not renamed yet). Both call participants ("host" and "joiner") use the same app; role is chosen at runtime, not at build time.
+Single Flutter app, targeting **Android and Web**, package `v_call_me`, application ID `dev.podgaev.v_call_me`. Both call participants ("host" and "joiner") use the same app; role is chosen at runtime, not at build time.
 
 ## Architecture direction
 
@@ -23,6 +23,9 @@ Don't force this split prematurely on something that's still a one-line stub - a
 - Prefer `const` constructors and widgets where possible.
 - Keep screens dumb: navigation + layout only. Business logic (state machine transitions, encode/decode) belongs in `domain`/`data`, unit-testable without pumping a widget tree.
 - New non-trivial logic (SDP codec, `CallSession` transitions) should get plain `package:test`/`flutter_test` unit tests, not just widget smoke tests.
+- Global app state (locale, debug-panel toggle) lives in Riverpod `Notifier`/`Provider`s in `lib/state/`, not `StatefulWidget` fields - see `settings.dart`. Anything that needs to persist across launches reads/writes through `sharedPreferencesProvider`, overridden once in `main()` with the instance loaded before `runApp`.
+- No hardcoded UI strings - route every user-facing string through `context.l10n` (the `AppLocalizations` extension in `lib/l10n/l10n.dart`). Add new strings to `lib/l10n/app_en.arb` first (source of truth) and `app_ru.arb`, then regenerate with `flutter gen-l10n` (or just `flutter pub get`/`flutter run`, which triggers it automatically since `generate: true` is set in `pubspec.yaml`).
+- This app targets **Android and Web**; guard any plugin call that lacks a web implementation with `kIsWeb` (from `package:flutter/foundation.dart`) rather than letting it throw `MissingPluginException` at runtime - see `shared_qr_intent_listener.dart` (`share_handler` has no web impl) and `qr_import_screen.dart` (`mobile_scanner`'s gallery `analyzeImage` has no web impl). QR codes are encoded as `vcallme://call?d=...` link *text* (`QrCode.fromData`, decoded back via `qr_link_codec.dart`'s `decodeQrText`) rather than raw byte-mode (`QrCode.fromUint8List`/`barcode.rawBytes`), because byte-mode payloads aren't recoverable through `mobile_scanner`'s web scanner - keep using the text-link path for any new QR-carrying code rather than reverting to raw bytes.
 
 ## Dev commands
 
@@ -31,7 +34,8 @@ flutter pub get
 flutter analyze
 flutter test
 flutter build apk --debug      # full Android build, see gotchas below
-flutter run -d <device-id>     # e.g. the emulator-5554 AVD
+flutter run -d <device-id>     # e.g. the emulator-5554 AVD, or `chrome` for web
+flutter build web              # full web build
 ```
 
 ## Toolchain versions (keep these in sync, don't let them drift apart)

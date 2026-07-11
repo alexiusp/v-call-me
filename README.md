@@ -2,7 +2,7 @@
 
 **A serverless, block-resistant video calling app to stay in touch with family or friends — built for reaching loved ones in regions where mainstream apps get throttled or blocked.**
 
-![Platform](https://img.shields.io/badge/platform-Android-3DDC84)
+![Platform](https://img.shields.io/badge/platform-Android%20%7C%20Web-3DDC84)
 ![Flutter](https://img.shields.io/badge/Flutter-3.44.5-02569B)
 ![Status](https://img.shields.io/badge/status-early%20development-orange)
 
@@ -59,7 +59,7 @@ Setting up a call is a two-message handshake carried entirely by QR codes:
 
 A few design choices make the single-QR-per-step handshake possible:
 
-- **Compact binary payload, not raw SDP.** Raw WebRTC SDP is 2–5 KB and produces a dense, fragile QR code that messaging-app recompression can break. Instead, only the fields that vary per call (ICE credentials, DTLS fingerprint, a handful of candidates) are packed into a ~90–150 byte custom binary format, and a full valid SDP is reconstructed from a fixed template on the receiving side. This keeps the QR at a low density with 30% error-correction redundancy. See [`DESIGN.md` §4](DESIGN.md).
+- **Compact binary payload, not raw SDP.** Raw WebRTC SDP is 2–5 KB and produces a dense, fragile QR code that messaging-app recompression can break. Instead, only the fields that vary per call (ICE credentials, DTLS fingerprint, a handful of candidates) are packed into a ~90–150 byte custom binary format, and a full valid SDP is reconstructed from a fixed template on the receiving side. This keeps the QR at a low density with 30% error-correction redundancy. The QR itself encodes this payload as `vcallme://call?d=...` link *text* (rather than raw byte-mode bytes), so the same code scans correctly on every platform, including web. See [`DESIGN.md` §4](DESIGN.md).
 - **Non-trickle ICE.** Each side waits for full ICE gathering (including a pre-allocated TURN relay candidate) *before* generating its QR, so the whole offer or answer collapses into one static code instead of a live back-and-forth.
 - **Hardcoded codecs** (Opus audio / VP8 video) so no codec lists need to be transmitted at all.
 
@@ -67,7 +67,7 @@ The only always-on infrastructure is a **STUN/TURN server** for NAT traversal an
 
 ## Status
 
-Early development, **Android-only**, but functionally complete: the signaling core, QR scan/display, in-call UI, and disconnect handling are all wired end-to-end and have been manually exercised on an emulator + a real Pixel device. The one thing still outstanding is a genuine two-real-device call — once that's verified, this is ready for real use.
+Early development, **Android + Web**, but functionally complete: the signaling core, QR scan/display, in-call UI, settings (language + debug panel), and disconnect handling are all wired end-to-end and have been manually exercised on an emulator + a real Pixel device. The one thing still outstanding is a genuine two-real-device call — once that's verified, this is ready for real use.
 
 **Implemented**
 - ✅ Compact binary signaling codec (offer/answer encode/decode) — unit-tested
@@ -82,7 +82,10 @@ Early development, **Android-only**, but functionally complete: the signaling co
 - ✅ Automatic return to Home with an explanatory message if the other side disconnects, fails, or closes the connection mid-call
 - ✅ Host-only debug panel (toggled via a checkbox on the offer QR screen) showing live connection status and the host's/joiner's IP addresses (from each side's decoded QR payload)
 - ✅ Android manifest, permissions, and toolchain fully wired; `flutter build apk --debug` succeeds
-- ✅ Store-prep: application ID `dev.podgaev.v_call_me`, custom launcher icon, and release signing (upload keystore via gitignored `key.properties`) — `flutter build appbundle --release` produces a signed AAB
+- ✅ **Web platform** target enabled alongside Android (`flutter run -d chrome` / `flutter build web`); platform-gated with `kIsWeb` wherever a plugin has no web implementation (gallery QR import, the incoming share-sheet listener)
+- ✅ **Settings screen** (gear icon on every app-bar screen): language picker (system default / English / Русский, persisted via `shared_preferences`) and the debug-panel toggle (moved out of the old QR-screen checkbox); state managed with `flutter_riverpod`
+- ✅ **Localization** (`flutter_localizations` + generated `AppLocalizations`) — all UI strings routed through `context.l10n`, English and Russian translations shipped
+- ✅ Store-prep: application ID `dev.podgaev.v_call_me`, custom launcher icon, release signing (upload keystore via gitignored `key.properties`) — `flutter build appbundle --release` produces a signed AAB — plus store screenshots/feature graphic in `store/`
 
 **Not yet implemented / verified**
 - ⏳ **Two real devices on their own separate networks, end-to-end** — the highest-priority remaining step. Exercised so far on an emulator + one real device on the same network; a genuine two-phone test (ideally with one on cellular data) is what's left before relying on it for real calls.
@@ -101,6 +104,9 @@ See [`DESIGN.md` §9–10](DESIGN.md) for the detailed implementation snapshot a
 | Sharing / image picking | [`share_plus`](https://pub.dev/packages/share_plus), [`image_picker`](https://pub.dev/packages/image_picker) |
 | TURN credentials | [`http`](https://pub.dev/packages/http) |
 | NAT traversal / relay | STUN + TURN (Metered / Open Relay; `coturn` self-host as fallback) |
+| State management | [`flutter_riverpod`](https://pub.dev/packages/flutter_riverpod) |
+| Persisted settings | [`shared_preferences`](https://pub.dev/packages/shared_preferences) |
+| Localization | `flutter_localizations` + [`intl`](https://pub.dev/packages/intl) (generated `AppLocalizations`, English + Russian) |
 
 ## Getting started
 
@@ -127,10 +133,10 @@ flutter pub get
 ### Run
 
 ```bash
-flutter run -d <device-id>     # e.g. flutter run -d emulator-5554
+flutter run -d <device-id>     # e.g. flutter run -d emulator-5554, or flutter run -d chrome for web
 ```
 
-To try the full handshake you currently need **two** running instances (two devices/emulators) taking the host and joiner roles — though end-to-end connection is not yet verified (see [Status](#status)).
+To try the full handshake you currently need **two** running instances (two devices/emulators/browser tabs) taking the host and joiner roles — though end-to-end connection is not yet verified (see [Status](#status)). Note that on web, gallery-based QR import and the incoming-share-sheet listener aren't available (no plugin implementation there) — use the live camera scanner or the shareable `vcallme://` link instead.
 
 ## Project structure
 
@@ -153,10 +159,17 @@ lib/
 │   └── turn/                     # Metered / Open Relay credentials service
 ├── services/
 │   ├── call_session.dart         # CallSession orchestrator + CallState machine
-│   └── qr_export.dart            # payload bytes -> PNG for sharing
+│   ├── qr_export.dart            # payload bytes -> PNG for sharing
+│   └── qr_link_codec.dart        # payload <-> vcallme:// link, incl. QR rawValue decoding
+├── state/
+│   └── settings.dart             # Riverpod providers: app locale, debug-panel toggle (persisted)
+├── l10n/                         # ARB source strings + generated AppLocalizations
+├── widgets/
+│   └── settings_button.dart      # gear icon opening SettingsScreen, on every app-bar screen
 └── screens/
     ├── home_screen.dart          # "Start a call" / "Join a call" + CallRole enum
-    ├── qr_display_screen.dart    # renders + shares the offer/answer QR; host debug-panel checkbox
+    ├── settings_screen.dart      # language picker + debug-panel toggle
+    ├── qr_display_screen.dart    # renders + shares the offer/answer QR
     ├── qr_import_screen.dart     # camera/gallery scan -> CallSession -> next screen
     └── in_call_screen.dart       # video renderers, controls, host-only debug panel
 
